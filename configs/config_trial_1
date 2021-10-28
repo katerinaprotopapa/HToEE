@@ -66,7 +66,8 @@ proc_to_tree_name:
 
 #X variables to train with. Must be in nominal_vars (unless created from existing features)
 train_vars:
-    ['diphotonPt', 'leadPhotonEta', 'subleadPhotonEta' #, 'subleadPhotonPtOvM' #'dijetAbsDEta', 'dijetDPhi','dijetMinDRJetEle', 'dijetMass', 
+    ['diphotonPt', 'leadPhotonEta', 'subleadPhotonEta', 'leadPhotonIDMVA', 'subleadPhotonIDMVA','leadJetPt' , 'subleadJetPt'
+     #, 'subleadPhotonPtOvM' #'dijetAbsDEta', 'dijetDPhi','dijetMinDRJetEle', 'dijetMass', 
      #'dijetDieleAbsDPhiTrunc', 'dijetDieleAbsDEta', 'dijetCentrality',
      #'leadJetDieleDPhi', 'subleadJetDieleDPhi', 'leadJetDieleDEta', 'subleadJetDieleDEta',
      #'leadElectronPtOvM', 'subleadElectronPtOvM', 'dielectronPt',
