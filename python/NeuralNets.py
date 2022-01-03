@@ -131,12 +131,21 @@ class LSTM_DNN(object):
             whether to apply the transforms to X_train in data. Used if plotting the DNN output score distribution in data
         
         """
-
-        empty_vars = ['leadJetEn', 'leadJetPt', 'leadJetPhi', 'leadJetEta', 'leadJetQGL',
-                      'subleadJetEn', 'subleadJetPt', 'subleadJetPhi', 'subleadJetEta', 'subleadJetQGL',
-                      'subsubleadJetEn', 'subsubleadJetPt', 'subsubleadJetPhi', 'subsubleadJetEta', 'subsubleadJetQGL',
-                      'dijetMinDRJetEle', 'dijetDieleAbsDEta','dijetDieleAbsDPhiTrunc', 'dijetCentrality', 'dijetMass', 
+        # Kat - this is what was here before
+        #empty_vars = ['leadJetEn', 'leadJetPt', 'leadJetPhi', 'leadJetEta', 'leadJetQGL',
+        #              'subleadJetEn', 'subleadJetPt', 'subleadJetPhi', 'subleadJetEta', 'subleadJetQGL',
+        #              'subsubleadJetEn', 'subsubleadJetPt', 'subsubleadJetPhi', 'subsubleadJetEta', 'subsubleadJetQGL',
+        #              'dijetMinDRJetEle', 'dijetDieleAbsDEta','dijetDieleAbsDPhiTrunc', 'dijetCentrality', 'dijetMass', 
+        #              'dijetAbsDEta', 'dijetDPhi'] 
+        
+        # how I am modifying this
+        empty_vars = ['leadJetEn', 'leadJetPt', 'leadJetPhi', 'leadJetEta', #'leadJetQGL',
+                      'subleadJetEn', 'subleadJetPt', 'subleadJetPhi', 'subleadJetEta', #'subleadJetQGL',
+                      'subsubleadJetEn', 'subsubleadJetPt', 'subsubleadJetPhi', 'subsubleadJetEta', #'subsubleadJetQGL',
+                      'dijetMinDRJetPho', 'dijetDiphoAbsDEta',#'dijetDiphoAbsDPhiTrunc', 
+                      'dijetCentrality', 'dijetMass', 
                       'dijetAbsDEta', 'dijetDPhi'] 
+
 
         replacement_value = -10
 
@@ -397,7 +406,7 @@ class LSTM_DNN(object):
                 l_event.append(l_object)
             l_to_convert.append(l_event)
         print 'Finished creating train object vars'
-        return np.array(l_to_convert, np.float32)
+        return np.array(l_to_convert) #, np.float32) # kat - I commented this out
 
         
     def set_model(self, n_lstm_layers=3, n_lstm_nodes=150, n_dense_1=1, n_nodes_dense_1=300, n_dense_2=4, n_nodes_dense_2=200, dropout_rate=0.1, learning_rate=0.001, batch_norm=True, batch_momentum=0.99):
@@ -569,6 +578,8 @@ class LSTM_DNN(object):
             number of full passes oevr the training sample
         """
 
+        print("X_train_high_level: ", self.X_train_high_level.shape)
+        print("X_train_low_level: ", self.X_train_low_level.shape) # Kat - this should be 3D instead of 2D?
         if self.eq_train: self.model.fit([self.X_train_high_level, self.X_train_low_level], self.y_train, epochs=epochs, batch_size=batch_size, sample_weight=self.train_weights_eq)       
         else: self.model.fit([self.X_train_high_level, self.X_train_low_level], self.y_train, epochs=epochs, batch_size=batch_size, sample_weight=self.train_weights)       
     

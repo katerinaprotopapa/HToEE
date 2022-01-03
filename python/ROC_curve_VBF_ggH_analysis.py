@@ -1,3 +1,12 @@
+# the plan
+# write a class to do the roc curve
+# run a for loop with train vars reducing
+# have the plot in this for loop
+
+# what I'll do is call the BDTs.py (follow the train_bdt.py script) but train_vars will not come from the config file - just so that I can edit that
+
+# COPYING train_bdt.py script:
+
 import argparse
 import numpy as np
 import yaml
@@ -7,7 +16,7 @@ from os import path,system
 from DataHandling import ROOTHelpers
 from BDTs import BDTHelpers
 
-def main(options):
+def main(options, train_vars_array):
 
     #take options from the yaml config
     with open(options.config, 'r') as config_file:
@@ -23,7 +32,7 @@ def main(options):
 
         proc_to_tree_name = config['proc_to_tree_name']
 
-        train_vars        = config['train_vars']
+        train_vars        = train_vars_array
         vars_to_add       = config['vars_to_add']
         presel            = config['preselection']
 
@@ -92,35 +101,76 @@ def main(options):
                 bdt_hee.set_hyper_parameters(best_params)
                 bdt_hee.train_classifier(root_obj.mc_dir, save=True, model_name=output_tag)
                 bdt_hee.compute_roc()
-                bdt_hee.plot_roc(output_tag)
-                bdt_hee.plot_output_score(output_tag, ratio_plot=True, norm_to_data=(not options.pt_reweight))
+                bdt_hee.plot_roc(output_tag, analysis = True)
+                #bdt_hee.plot_output_score(output_tag, ratio_plot=True, norm_to_data=(not options.pt_reweight))
                 #bdt_hee.plot_feature_importance(num_plots='single',num_feature=20,imp_type='weight',values = False)
-                bdt_hee.plot_feature_importance(output_tag, num_plots='all',num_feature=20,values = False)
+                #bdt_hee.plot_feature_importance(output_tag, num_plots='all',num_feature=20,values = False)
 
         #else just train BDT with default HPs
         else:
             bdt_hee.train_classifier(root_obj.mc_dir, save=True, model_name=output_tag+'_clf')
             #bdt_hee.train_classifier(root_obj.mc_dir, save=False, model_name=output_tag+'_clf')
             bdt_hee.compute_roc()
-            bdt_hee.plot_roc(output_tag)
+            bdt_hee.plot_roc(output_tag, analysis = True)
             #bdt_hee.plot_output_score(output_tag, ratio_plot=True, norm_to_data=(not options.pt_reweight), log=False)
-            bdt_hee.plot_output_score(output_tag, ratio_plot=True, norm_to_data=(not options.pt_reweight), log=True)
+            #bdt_hee.plot_output_score(output_tag, ratio_plot=True, norm_to_data=(not options.pt_reweight), log=True)
             #bdt_hee.plot_feature_importance(num_plots='single',num_feature=20,imp_type='weight',values = False)
-            bdt_hee.plot_feature_importance(output_tag, num_plots='all',num_feature=20,values = False)
+            #bdt_hee.plot_feature_importance(output_tag, num_plots='all',num_feature=20,values = False)
 
-if __name__ == "__main__":
+"""
+# the different train_vars arrays
+# random order
+train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
+     'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
+     'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
+     'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi',
+     'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
+     'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
+     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
+     'subleadPhotonEn','subleadPhotonPt', 
+     'subleadJetDiphoDPhi','subleadJetDiphoDEta',
+     'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
+     'subleadJetEn','subleadJetEta','subleadJetPhi',
+     'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
+     'subsubleadJetMass',
+     'metPt','metPhi','metSumET',
+     'nSoftJets'
+     ]
+"""
+"""
+# more important to less (feature_importance_gain) - top 20
+train_vars = ['leadJetPt', 'dijetAbsDEta', 'dijetMass', 'dijetDPhi', 'dijetCentrality',
+     'leadJetEn', 'leadJetPhi','subleadJetPUJID', 'diphotonPt', 'subleadJetBTagScore',
+     'nSoftJets', 'subleadJetEta', 'leadJetBTagScore', 'leadPhotonPt', 'leadJetMass',
+     'diphotonCosPhi', 'leadJetEta', 'subleadJetMass', 'dijetDiphoAbsDEta', 'subleadJetPt'
+     ]
+"""
+# less important to more (feature_importance_gain) - top 20
+train_vars = ['subleadJetPt', 'dijetDiphoAbsDEta', 'subleadJetMass', 'leadJetEta', 'diphotonCosPhi',
+        'leadJetMass', 'leadPhotonPt', 'leadJetBTagScore', 'subleadJetEta', 'nSoftJets',
+        'subleadJetBTagScore', 'diphotonPt', 'subleadJetPUJID', 'leadJetPhi', 'leadJetEn',
+        'dijetCentrality', 'dijetDPhi', 'dijetMass', 'dijetAbsDEta', 'leadJetPt'
+        ]
 
-    parser = argparse.ArgumentParser()
-    required_args = parser.add_argument_group('Required Arguments')
-    required_args.add_argument('-c','--config', action='store', required=True)
-    opt_args = parser.add_argument_group('Optional Arguements')
-    opt_args.add_argument('-r','--reload_samples', action='store_true', default=False)
-    opt_args.add_argument('-w','--eq_train', action='store_true', default=False)
-    opt_args.add_argument('-o','--opt_hps', action='store_true', default=False)
-    opt_args.add_argument('-H','--hp_perm', action='store', default=None)
-    opt_args.add_argument('-k','--k_folds', action='store', default=3, type=int)
-    opt_args.add_argument('-b','--train_best', action='store_true', default=False)
-    opt_args.add_argument('-t','--train_frac', action='store', default=0.7, type=float)
-    opt_args.add_argument('-P','--pt_reweight', action='store_true',default=False)
-    options=parser.parse_args()
-    main(options)
+# so here we go with the for loop
+for i in range(len(train_vars)):
+     train_vars_array = train_vars[:i]
+
+     if __name__ == "__main__":
+
+          parser = argparse.ArgumentParser()
+          required_args = parser.add_argument_group('Required Arguments')
+          required_args.add_argument('-c','--config', action='store', required=True)
+          opt_args = parser.add_argument_group('Optional Arguements')
+          opt_args.add_argument('-r','--reload_samples', action='store_true', default=False)
+          opt_args.add_argument('-w','--eq_train', action='store_true', default=False)
+          opt_args.add_argument('-o','--opt_hps', action='store_true', default=False)
+          opt_args.add_argument('-H','--hp_perm', action='store', default=None)
+          opt_args.add_argument('-k','--k_folds', action='store', default=3, type=int)
+          opt_args.add_argument('-b','--train_best', action='store_true', default=False)
+          opt_args.add_argument('-t','--train_frac', action='store', default=0.7, type=float)
+          opt_args.add_argument('-P','--pt_reweight', action='store_true',default=False)
+          options=parser.parse_args()
+          main(options, train_vars_array = train_vars_array)
+     
+

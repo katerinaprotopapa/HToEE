@@ -79,7 +79,7 @@ list_variables = [#'diphotonPt'
                 #, 'weight' 
                 #, 'centralObjectWeight' 
                 #, 'leadPhotonPtOvM'
-                #, 'dijetMass' 
+                 'dijetMass' 
                 #, 'subleadPhotonPtOvM'
                 #, 'leadJetPt'
                 #, 'subleadJetPt' #'leadElectronIDMVA', 'subleadElectronIDMVA',
@@ -98,7 +98,8 @@ list_variables = [#'diphotonPt'
                 # 'dijetCentrality'
                 # 'leadJetBTagScore' 
                 # 'subleadJetBTagScore', 'subsubleadJetBTagScore'
-                #, 'leadJetMass' ,'leadPhotonEn', 'leadPhotonMass' ,'leadPhotonPt'
+                #, 'leadJetMass' ,'leadPhotonEn', 'leadPhotonMass' ,
+                # 'leadPhotonPt'
                 #, 'subleadJetMass', 'subleadPhotonEn', 'subleadPhotonMass', 'subleadPhotonPt'
                 #, 'DR' 
                 #'leadPhotonPhi','leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi'
@@ -119,17 +120,17 @@ for variable in list_variables:
   # Signal
   
   vbf_sig_0 = np.array(df[df['proc'] == 'VBF'][variable])
-  vbf_sig_w = np.array(df[df['proc'] == 'VBF']['weight'])[(vbf_sig_0 > -10) & (vbf_sig_0 <300)]
-  vbf_sig = vbf_sig_0[(vbf_sig_0 > -10) & (vbf_sig_0 < 300)]
+  vbf_sig_w = np.array(df[df['proc'] == 'VBF']['weight'])[(vbf_sig_0 > -10) & (vbf_sig_0 <2000)]
+  vbf_sig = vbf_sig_0[(vbf_sig_0 > -10) & (vbf_sig_0 < 2000)]
   vh_sig_0 = np.array(df[df['proc'] == 'VH'][variable])
-  vh_sig_w = np.array(df[df['proc'] == 'VH']['weight'])[(vh_sig_0 > -10) & (vh_sig_0 <300)]
-  vh_sig = vh_sig_0[(vh_sig_0 > -10) & (vh_sig_0 <300)]
+  vh_sig_w = np.array(df[df['proc'] == 'VH']['weight'])[(vh_sig_0 > -10) & (vh_sig_0 <2000)]
+  vh_sig = vh_sig_0[(vh_sig_0 > -10) & (vh_sig_0 <2000)]
   ggh_sig_0 = np.array(df[df['proc'] == 'ggH'][variable])
-  ggh_sig_w = np.array(df[df['proc'] == 'ggH']['weight'])[(ggh_sig_0 > -10) & (ggh_sig_0 <300)]
-  ggh_sig = ggh_sig_0[(ggh_sig_0 > -10) & (ggh_sig_0 <300)]
+  ggh_sig_w = np.array(df[df['proc'] == 'ggH']['weight'])[(ggh_sig_0 > -10) & (ggh_sig_0 <2000)]
+  ggh_sig = ggh_sig_0[(ggh_sig_0 > -10) & (ggh_sig_0 <2000)]
   tth_sig_0 = np.array(df[df['proc'] == 'ttH'][variable])
-  tth_sig_w = np.array(df[df['proc'] == 'ttH']['weight'])[(tth_sig_0 > -10) & (tth_sig_0 <300)]
-  tth_sig = tth_sig_0[(tth_sig_0 > -10) & (tth_sig_0 <300)]
+  tth_sig_w = np.array(df[df['proc'] == 'ttH']['weight'])[(tth_sig_0 > -10) & (tth_sig_0 <2000)]
+  tth_sig = tth_sig_0[(tth_sig_0 > -10) & (tth_sig_0 <2000)]
   combined_sig = np.concatenate((vbf_sig,vh_sig,ggh_sig,tth_sig),axis=0)
   combined_sig_w = np.concatenate((vbf_sig_w,vh_sig_w,ggh_sig_w,tth_sig_w),axis=0)
   combined_sig_exc_vbf = np.concatenate((vh_sig,ggh_sig,tth_sig),axis=0)
@@ -157,7 +158,7 @@ for variable in list_variables:
   # Now let's plot the histogram
 
   scale = 100
-  num_bins = 100
+  num_bins = 40
   normalize = True
 
   fig, ax = plt.subplots(1)
@@ -171,12 +172,12 @@ for variable in list_variables:
   #print("Bckg Area", area)
 
   # signal
-  #plt.hist(vbf_sig, bins = num_bins, density = normalize, color = 'firebrick', label = 'VBF', histtype = 'step', weights = scale * vbf_sig_w)
-  #plt.hist(vh_sig, bins = num_bins, density = normalize, color = 'cyan', label = 'VH', stacked = True, histtype = 'step', weights = scale * vh_sig_w)
-  #plt.hist(ggh_sig, bins = num_bins, density = normalize, color = 'green', label = 'ggH', stacked = True, histtype = 'step', weights = scale * ggh_sig_w)
-  plt.hist(tth_sig, bins = num_bins, density = normalize, color = 'coral', label = 'ttH', stacked = True, histtype = 'step', weights = scale * tth_sig_w)
+  plt.hist(vbf_sig, bins = num_bins, density = normalize, color = 'orange', label = 'VBF', histtype = 'step', weights = scale * vbf_sig_w)
+  #plt.hist(vh_sig, bins = num_bins, density = normalize, color = 'limegreen', label = 'VH', stacked = True, histtype = 'step', weights = scale * vh_sig_w)
+  plt.hist(ggh_sig, bins = num_bins, density = normalize, color = 'deepskyblue', label = 'ggH', stacked = True, histtype = 'step', weights = scale * ggh_sig_w)
+  #plt.hist(tth_sig, bins = num_bins, density = normalize, color = 'orchid', label = 'ttH', stacked = True, histtype = 'step', weights = scale * tth_sig_w)
   #plt.hist(combined_sig, bins = num_bins, density = normalize, color = 'blue', label = 'Signal',  histtype = 'step', weights = scale * combined_sig_w)
-  plt.hist(combined_sig_exc_tth, bins = num_bins, density = normalize, color = 'blue', label = 'VH, tth, ggh',  histtype = 'step', weights = scale * combined_sig_w_exc_tth)
+  #plt.hist(combined_sig_exc_tth, bins = num_bins, density = normalize, color = 'blue', label = 'VH, tth, ggh',  histtype = 'step', weights = scale * combined_sig_w_exc_tth)
 
   # data
   #plt.hist(data, bins = num_bins, density = normalize, color = 'black', label = 'Data', histtype = 'step', weights = data_w)
@@ -186,8 +187,8 @@ for variable in list_variables:
   plt.ylabel('Events')
   if variable == 'diphotonMass':
     plt.xlim(100,150)
-  if variable == 'dijetMass':
-    plt.xlim(0,300)
+  #if variable == 'dijetMass':
+  #  plt.xlim(0,300)
   elif variable == 'diphotonPt':
     plt.xlim(0,200)
   elif variable == 'leadPhotonIDMVA':
@@ -202,8 +203,8 @@ for variable in list_variables:
     plt.xlim(-1,1) 
     plt.legend(loc='upper left') 
 
-  name = 'plotting/plots/new/' + variable + 'combined_exc_tth'
-  #fig.savefig(name)
+  name = 'plotting/plots/' + variable 
+  fig.savefig(name, dpi=300)
 
 
 

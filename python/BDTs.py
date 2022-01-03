@@ -29,7 +29,7 @@ class BDTHelpers(object):
     :type eq_train: bool
     """
 
-    def __init__(self, data_obj, train_vars, train_frac, eq_train=True):
+    def __init__(self, data_obj, train_vars, train_frac, eq_train=False):
 
         self.data_obj         = data_obj
         self.train_vars       = train_vars
@@ -74,10 +74,10 @@ class BDTHelpers(object):
         #attributes for plotting. 
         self.plotter          = Plotter(data_obj, train_vars)
         self.sig_procs        = np.unique(data_obj.mc_df_sig['proc']).tolist()
-        self.bkg_procs        = np.unique(data_obj.mc_df_bkg['proc']).tolist()
+        self.bkg_procs        = np.unique(data_obj.mc_df_bkg['proc']).tolist()   
         del data_obj
         
-    def create_X_and_y(self, mass_res_reweight=True):
+    def create_X_and_y(self, mass_res_reweight=False):
         """
         Create X train/test and y train/test
 
@@ -95,11 +95,10 @@ class BDTHelpers(object):
         mc_df_bkg['y'] = np.zeros(self.data_obj.mc_df_bkg.shape[0]).tolist()
 
 
-
         if self.eq_train: 
             if mass_res_reweight:
                 #be careful not to change the real weight variable, or test scores will be invalid
-                mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['dielectronSigmaMoM'])
+                mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['diphotonSigmaMoM'])
                 b_to_s_ratio = np.sum(mc_df_bkg['weight'].values)/np.sum(mc_df_sig['MoM_weight'].values)
                 mc_df_sig['eq_weight'] = (mc_df_sig['MoM_weight']) * (b_to_s_ratio)
             else: 
@@ -115,11 +114,27 @@ class BDTHelpers(object):
                                                                                                                                          shuffle=True, 
                                                                                                                                          random_state=1357
                                                                                                                                          )
+
+            X_train2, X_test2, train_w2, test_w2, y_train2, y_test2, proc_arr_train2, proc_arr_test2 = train_test_split(Z_tot[self.train_vars], 
+                                                                                                               Z_tot['weight'],
+                                                                                                               Z_tot['y'], Z_tot['proc'],
+                                                                                                               train_size=0, 
+                                                                                                               shuffle=False
+                                                                                                               )
+
+            #X_train_dij, X_test_dij, train_w_dij, test_w_dij, y_train_dij, y_test_dij, proc_arr_train_dij, proc_arr_test_dij = train_test_split(Z_tot['dijetCentrality'], 
+             #                                                                                                  Z_tot['weight'],
+              #                                                                                                 Z_tot['y'], Z_tot['proc'],
+               #                                                                                                train_size=self.train_frac, 
+                #                                                                                               shuffle=False
+                 #                                                                                              )  
+                                                                                                                                       
             #NB: will never test/evaluate with equalised weights. This is explicitly why we set another train weight attribute, 
             #    because for overtraining we need to evaluate on the train set (and hence need nominal MC train weights)
             self.train_weights_eq = train_w_eqw.values
         elif mass_res_reweight:
-           mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['dielectronSigmaMoM'])
+           mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['diphotonSigmaMoM'])
+
            Z_tot = pd.concat([mc_df_sig, mc_df_bkg], ignore_index=True)
            X_train, X_test, train_w, test_w, train_w_eqw, test_w_eqw, y_train, y_test, proc_arr_train, proc_arr_test = train_test_split(Z_tot[self.train_vars], Z_tot['weight'], 
                                                                                                                                         Z_tot['MoM_weight'], Z_tot['y'], Z_tot['proc'],
@@ -128,6 +143,19 @@ class BDTHelpers(object):
                                                                                                                                         shuffle=True, 
                                                                                                                                         random_state=1357
                                                                                                                                         )
+           X_train2, X_test2, train_w2, test_w2, y_train2, y_test2, proc_arr_train2, proc_arr_test2 = train_test_split(Z_tot[self.train_vars], 
+                                                                                                               Z_tot['weight'],
+                                                                                                               Z_tot['y'], Z_tot['proc'],
+                                                                                                               train_size=0, 
+                                                                                                               shuffle=False
+                                                                                                               )
+           #X_train_dij, X_test_dij, train_w_dij, test_w_dij, y_train_dij, y_test_dij, proc_arr_train_dij, proc_arr_test_dij = train_test_split(Z_tot['dijetCentrality'], 
+            #                                                                                                   Z_tot['weight'],
+             #                                                                                                  Z_tot['y'], Z_tot['proc'],
+              #                                                                                                 train_size=self.train_frac, 
+               #                                                                                                shuffle=False
+                #                                                                                               ) 
+           
            self.train_weights_eq = train_w_eqw.values
            self.eq_train = True #use alternate weight in training. could probs rename this to something better
         else:
@@ -141,17 +169,54 @@ class BDTHelpers(object):
                                                                                                                shuffle=True, random_state=1357
                                                                                                                )
 
-        self.X_train          = X_train.values
-        self.y_train          = y_train.values
-        self.train_weights    = train_w.values
+           X_train2, X_test2, train_w2, test_w2, y_train2, y_test2, proc_arr_train2, proc_arr_test2 = train_test_split(Z_tot[self.train_vars], 
+                                                                                                               Z_tot['weight'],
+                                                                                                               Z_tot['y'], Z_tot['proc'],
+                                                                                                               train_size=0, 
+                                                                                                               shuffle=False
+                                                                                                               )
+
+           #X_train_dij, X_test_dij, train_w_dij, test_w_dij, y_train_dij, y_test_dij, proc_arr_train_dij, proc_arr_test_dij = train_test_split(Z_tot['dijetCentrality'], 
+            #                                                                                                   Z_tot['weight'],
+             #                                                                                                  Z_tot['y'], Z_tot['proc'],
+              #                                                                                                 train_size=self.train_frac, 
+               #                                                                                                shuffle=False
+                #                                                                                               )
+          
+
+        #train_test_split(Z_tot[self.train_vars], Z_tot['weight'],Z_tot['y'], Z_tot['proc'],train_size=self.train_frac, shuffle=True, random_state=1357)
+
+#Change
+        self.X_test2          = X_test2
+        #self.X_test_dij       = X_test_dij
+        #self.X_train_dij      = X_train_dij
+
+        self.X_train          = X_train #.values
+        self.y_train          = y_train #.values
+        self.train_weights    = train_w #.values
         self.proc_arr_train   = proc_arr_train
 
-        self.X_test           = X_test.values
-        self.y_test           = y_test.values
-        self.test_weights     = test_w.values
+        self.X_test           = X_test  #.values
+        self.y_test           = y_test  #.values
+        self.test_weights     = test_w  #.values
         self.proc_arr_test    = proc_arr_test
 
         self.X_data_train, self.X_data_test = train_test_split(self.data_obj.data_df[self.train_vars], train_size=self.train_frac, test_size=1-self.train_frac, shuffle=True, random_state=1357)
+    
+#Change        
+        #df_Z_tot = pd.DataFrame(Z_tot)
+        #df_y_test = pd.DataFrame(y_test)
+        #df_y_train = pd.DataFrame(y_train)
+        #return df_Z_tot, df_y_test, df_y_train
+        #self.signal_output_score = self.clf.predict_proba(self.data_obj.data_df[self.train_vars])[:,1:]
+        #np.savetxt('models/Output_BDT.csv', self.signal_output_score, delimiter=',')
+        #output_df = self.data_obj
+        #np.savetxt('models/Output_df1.csv', output_df, delimiter=',')
+        #output_df['BDT_output_score'] = self.signal_output_score
+        #np.savetxt('models/Output_df2.csv', output_df, delimiter=',')
+
+        #self.data_obj["output_score"] = self.y_test
+        #return self.data_obj
 
     def create_X_and_y_three_class(self, third_class, mass_res_reweight=True):
         """
@@ -180,7 +245,9 @@ class BDTHelpers(object):
         if self.eq_train: 
             if mass_res_reweight:
                 #be careful not to change the real weight variable, or test scores will be invalid
-                mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['dielectronSigmaMoM'])
+#Change:
+#                mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['dielectronSigmaMoM'])
+                mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['diphotonSigmaMoM'])                
                 bkg_sumw                = np.sum(mc_df_bkg[mc_df_bkg.y==0]['weight'].values)
                 third_class_sumw        = np.sum(mc_df_bkg[mc_df_bkg.y==1]['weight'].values)
                 sig_sumw                = np.sum(mc_df_sig['MoM_weight'].values)
@@ -208,7 +275,10 @@ class BDTHelpers(object):
             #    because for overtraining we need to evaluate on the train set (and hence need nominal MC train weights)
             self.train_weights_eq = train_w_eqw.values
         elif mass_res_reweight:
-           mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['dielectronSigmaMoM'])
+#Change:
+#           mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['dielectronSigmaMoM'])
+           mc_df_sig['MoM_weight'] = (mc_df_sig['weight']) * (1./mc_df_sig['diphotonSigmaMoM'])
+
            Z_tot = pd.concat([mc_df_sig, mc_df_bkg], ignore_index=True)
            X_train, X_test, train_w, test_w, train_w_eqw, test_w_eqw, y_train, y_test, proc_arr_train, proc_arr_test = train_test_split(Z_tot[self.train_vars], Z_tot['weight'], 
                                                                                                                                         Z_tot['MoM_weight'], Z_tot['y'], Z_tot['proc'],
@@ -241,6 +311,8 @@ class BDTHelpers(object):
 
         self.X_data_train, self.X_data_test = train_test_split(self.data_obj.data_df[self.train_vars], train_size=self.train_frac, test_size=1-self.train_frac, shuffle=True, random_state=1357)
 
+#Could be this following variable_
+#self.data_obj.data_df[self.train_vars]
 
     def train_classifier(self, file_path, save=False, model_name='my_model'):
         """
@@ -260,7 +332,7 @@ class BDTHelpers(object):
         else: train_weights = self.train_weights
 
         print ('Training classifier... ')
-        clf = self.clf.fit(self.X_train, self.y_train, sample_weight=train_weights)
+        clf = self.clf.fit(self.X_train, self.y_train) #, sample_weight=train_weights)
         print ('Finished Training classifier!')
         self.clf = clf
 
@@ -268,6 +340,8 @@ class BDTHelpers(object):
         if save:
             pickle.dump(clf, open("{}/models/{}.pickle.dat".format(os.getcwd(), model_name), "wb"))
             print ("Saved classifier as: {}/models/{}.pickle.dat".format(os.getcwd(), model_name))
+
+        
 
     def batch_gs_cv(self, k_folds=3, pt_rew=False):
         """
@@ -411,10 +485,19 @@ class BDTHelpers(object):
         """
 
         self.y_pred_train = self.clf.predict_proba(self.X_train)[:,1:]
-        print ('Area under ROC curve for train set is: {:.4f}'.format(roc_auc_score(self.y_train, self.y_pred_train, sample_weight=self.train_weights)))
+        #self.y_pred_train_dij = self.clf.predict_proba(self.X_train_dij)  # adding this here
 
+        print ('Area under ROC curve for train set is: {:.4f}'.format(roc_auc_score(self.y_train, self.y_pred_train))) #, sample_weight=self.train_weights
+        #print ('Area under ROC curve for Dijet Centrality train set is: {:.4f}'.format(roc_auc_score(self.y_train_dij, self.y_pred_train_dij)))  # adding this here
         self.y_pred_test = self.clf.predict_proba(self.X_test)[:,1:]
-        print ('Area under ROC curve for test set is: {:.4f}'.format(roc_auc_score(self.y_test, self.y_pred_test, sample_weight=self.test_weights)))
+        #self.y_pred_test_dij = self.clf.predict_proba(self.X_test_dij)  # adding this here
+        print ('Area under ROC curve for test set is: {:.4f}'.format(roc_auc_score(self.y_test, self.y_pred_test))) #, sample_weight=self.test_weights
+        #print ('Area under ROC curve for Dijet Centrality test set is: {:.4f}'.format(roc_auc_score(self.y_test_dij, self.y_pred_test_dij)))  # adding this here
+        
+
+        self.y_pred = self.clf.predict_proba(self.X_test2)[:,1:]
+        np.savetxt('models/Output_BDT.csv', self.y_pred, delimiter=',')
+        
 
         #get auc for bkg->data
         sig_y_pred_test  = self.y_pred_test[self.y_test==1]
@@ -422,14 +505,17 @@ class BDTHelpers(object):
         sig_y_true_test  = self.y_test[self.y_test==1]
         data_weights_test = np.ones(self.X_data_test.values.shape[0])
         data_y_true_test  = np.zeros(self.X_data_test.values.shape[0])
-        data_y_pred_test  = self.clf.predict_proba(self.X_data_test.values)[:,1:]
+#Change
+        #data_y_pred_test  = self.clf.predict_proba(self.X_data_test.values)[:,1:]
+        data_y_pred_test  = self.clf.predict_proba(self.X_data_test)[:,1:]
+        
         print ('Area under ROC curve with data as bkg is: {:.4f}'.format(roc_auc_score( np.concatenate((sig_y_true_test, data_y_true_test), axis=None),
                                                                                        np.concatenate((sig_y_pred_test, data_y_pred_test), axis=None),
                                                                                        sample_weight=np.concatenate((sig_weights_test, data_weights_test), axis=None) 
                                                                                      )
                                                                         ))
 
-        return roc_auc_score(self.y_test, self.y_pred_test, sample_weight=self.test_weights)
+        return roc_auc_score(self.y_test, self.y_pred_test) #, sample_weight=self.test_weights
 
     def compute_roc_three_class(self, third_class):
         """
@@ -470,18 +556,28 @@ class BDTHelpers(object):
         #                                                               )
         
 
-    def plot_roc(self, out_tag):
+    def plot_roc(self, out_tag, analysis = False):
         """
         Method to plot the roc curve, using method from Plotter() class
         """
+        if analysis == False:
+            roc_fig = self.plotter.plot_roc(self.y_train, self.y_pred_train, self.train_weights, 
+                                   self.y_test, self.y_pred_test, self.test_weights, out_tag=out_tag, dijetcentrality_bool =False, analysis = analysis)
 
-        roc_fig = self.plotter.plot_roc(self.y_train, self.y_pred_train, self.train_weights, 
-                                   self.y_test, self.y_pred_test, self.test_weights, out_tag=out_tag)
+            Utils.check_dir('{}/plotting/plots/{}'.format(os.getcwd(), out_tag))
+            roc_fig.savefig('{0}/plotting/plots/{1}/{1}_ROC_curve.pdf'.format(os.getcwd(),out_tag))
+            print('saving: {0}/plotting/plots/{1}/{1}_ROC_curve.pdf'.format(os.getcwd(),out_tag))
+            plt.close()
 
-        Utils.check_dir('{}/plotting/plots/{}'.format(os.getcwd(), out_tag))
-        roc_fig.savefig('{0}/plotting/plots/{1}/{1}_ROC_curve.pdf'.format(os.getcwd(),out_tag))
-        print('saving: {0}/plotting/plots/{1}/{1}_ROC_curve.pdf'.format(os.getcwd(),out_tag))
-        plt.close()
+        else:
+            roc_fig = self.plotter.plot_roc(self.y_train, self.y_pred_train, self.train_weights, 
+                                   self.y_test, self.y_pred_test, self.test_weights, out_tag=out_tag, dijetcentrality_bool =False, analysis = analysis)
+
+            Utils.check_dir('{}/plotting/plots/{}'.format(os.getcwd(), out_tag))
+            roc_fig.savefig('{0}/plotting/plots/{1}/{1}_ROC_curve_analysis.pdf'.format(os.getcwd(),out_tag))
+            print('saving: {0}/plotting/plots/{1}/{1}_ROC_curve_analysis.pdf'.format(os.getcwd(),out_tag))
+
+
 
     def plot_output_score(self, out_tag, ratio_plot=False, norm_to_data=False, log=False):
         """
@@ -497,14 +593,46 @@ class BDTHelpers(object):
             whether to normalise the integral of the simulated background, to the integral in data
         """
 
-        output_score_fig = self.plotter.plot_output_score(self.y_test, self.y_pred_test, self.test_weights, 
-                                                          self.proc_arr_test, self.clf.predict_proba(self.X_data_test.values)[:,1:],
-                                                          ratio_plot=ratio_plot, norm_to_data=norm_to_data, log=log)
+#Change
+        #output_score_fig = self.plotter.plot_output_score(self.y_test, self.y_pred_test, self.test_weights, 
+        #                                                  self.proc_arr_test, self.clf.predict_proba(self.X_data_test.values)[:,1:],
+        #                                                  ratio_plot=ratio_plot, norm_to_data=norm_to_data, log=log)
 
+        output_score_fig = self.plotter.plot_output_score(self.y_test, self.y_pred_test, self.test_weights, 
+                                                          self.proc_arr_test, self.clf.predict_proba(self.X_data_test)[:,1:],
+                                                          ratio_plot=ratio_plot, norm_to_data=norm_to_data, log=log, label = 'train', ks_test = False)  
+        """
+        # this is to check the K-S test of the distribution
+        output_score_fig_2 = self.plotter.plot_output_score(self.y_train, self.y_pred_train, self.train_weights, 
+                                                          self.proc_arr_train, self.clf.predict_proba(self.X_data_train)[:,1:],
+                                                          ratio_plot=ratio_plot, norm_to_data=norm_to_data, log=log, label = 'test', ks_test = True) 
+        Utils.check_dir('{}/plotting/plots/{}'.format(os.getcwd(),out_tag))
+        output_score_fig.savefig('{0}/plotting/plots/{1}/{1}_output_score_kstest.pdf'.format(os.getcwd(), out_tag))
+        print('saving: {0}/plotting/plots/{1}/{1}_output_score_kstest.pdf'.format(os.getcwd(), out_tag)) 
+        plt.close()
+        # until here
+        """
+
+        # this should be added back once K-S testing is done
+        
         Utils.check_dir('{}/plotting/plots/{}'.format(os.getcwd(),out_tag))
         output_score_fig.savefig('{0}/plotting/plots/{1}/{1}_output_score.pdf'.format(os.getcwd(), out_tag))
         print('saving: {0}/plotting/plots/{1}/{1}_output_score.pdf'.format(os.getcwd(), out_tag))
         plt.close()
+        
+
+    def plot_feature_importance(self,out_tag, num_plots='single',num_feature=20,imp_type='weight',values = False):
+        if num_plots=='single':
+            xgb.plot_importance(self.clf, max_num_features=num_feature, grid = False, height = 0.4, importance_type = imp_type, title = 'Feature importance ({})'.format(imp_type), show_values = values, color ='blue')
+            plt.savefig('{0}/plotting/plots/{1}/{1}_feature_importance_{3}.pdf'.format(os.getcwd(), out_tag, imp_type))
+            print('saving: {0}/plotting/plots/{1}/{1}_feature_importance_{3}.pdf'.format(os.getcwd(), out_tag, imp_type))
+        
+        else:
+            imp_types = ['weight','gain','cover']
+            for i in imp_types:
+                xgb.plot_importance(self.clf, max_num_features=num_feature, grid = False, height = 0.4, importance_type = i, title = 'Feature importance ({})'.format(i), show_values = values, color ='blue')
+                plt.savefig('{0}/plotting/plots/{1}/{1}_feature_importance_{2}.pdf'.format(os.getcwd(), out_tag, i))
+                print('saving: {0}/plotting/plots/{1}/{1}_feature_importance_{2}.pdf'.format(os.getcwd(), out_tag, i))
 
     def plot_output_score_three_class(self, out_tag, ratio_plot=False, norm_to_data=False, log=False, third_class=''):
         """
@@ -532,4 +660,5 @@ class BDTHelpers(object):
             output_score_fig.savefig('{0}/plotting/plots/{1}/{1}_output_score_clf_class_{2}.pdf'.format(os.getcwd(), out_tag, clf_class))
             print('saving: {0}/plotting/plots/{1}/{1}_output_score_clf_class_{2}.pdf'.format(os.getcwd(), out_tag, clf_class))
             plt.close()
+
 

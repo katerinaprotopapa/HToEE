@@ -58,6 +58,8 @@ class Plotter(object):
 
         self.sig_scaler   = 50**2
 
+        self.input_vars = input_vars
+
  
 
         #get xrange from yaml config
@@ -474,7 +476,7 @@ class Plotter(object):
 
  
 
-    def plot_roc(self, y_train, y_pred_train, train_weights, y_test, y_pred_test, test_weights, out_tag='MVA'):
+    def plot_roc(self, y_train, y_pred_train, train_weights, y_test, y_pred_test, test_weights, out_tag='MVA', dijetcentrality_bool = False, analysis = False):
 
         bkg_eff_train, sig_eff_train, _ = roc_curve(y_train, y_pred_train, sample_weight=train_weights)
 
@@ -486,9 +488,21 @@ class Plotter(object):
 
         axes = fig.gca()
 
-        axes.plot(bkg_eff_train, sig_eff_train, color='red', label='Train')
+        if analysis:
+            label_name = 'Train{}'.format(len(self.input_vars)) 
+            axes.plot(bkg_eff_train, sig_eff_train, label=label_name)
+            label_name = 'Test{}'.format(len(self.input_vars)) 
+            axes.plot(bkg_eff_test, sig_eff_test, label=label_name)
 
-        axes.plot(bkg_eff_test, sig_eff_test, color='blue', label='Test')
+        else:
+            axes.plot(bkg_eff_train, sig_eff_train, color='red', label='Train')
+
+            axes.plot(bkg_eff_test, sig_eff_test, color='blue', label='Test')
+
+        if dijetcentrality_bool:
+            dijet_vbf = np.loadtxt('models/ROC_curve_VBF.csv', delimiter=',')
+            dijet_ggh = np.loadtxt('models/ROC_curve_ggH.csv', delimiter=',')
+            axes.plot(dijet_ggh, dijet_vbf, color = 'green', label = 'Dijet Centrality')
 
         axes.set_xlabel('Background efficiency', ha='right', x=1, size=13)
 
@@ -516,7 +530,12 @@ class Plotter(object):
 
  
 
-    def plot_output_score(self, y_test, y_pred_test, test_weights, proc_arr_test, data_pred_test, MVA='BDT', ratio_plot=False, norm_to_data=False, log=False):
+    def plot_output_score(self, y_test, y_pred_test, test_weights, proc_arr_test, data_pred_test, MVA='BDT', ratio_plot=False, norm_to_data=False, log=False, label = ' ', ks_test = False):
+        
+        ratio_plot = False
+        norm_to_data = False
+        log = False
+        self.normalise = True
 
         if ratio_plot:
 
@@ -583,9 +602,16 @@ class Plotter(object):
 
         #sig
 
-        axes.hist(sig_scores, bins=bins, label=self.sig_labels[0]+r' ($\mathrm{H}\rightarrow\mathrm{ee}$) '+self.num_to_str(self.sig_scaler), weights=sig_w_true*(self.sig_scaler), histtype='step', color=self.sig_colour)
-
- 
+        np.savetxt('models/sig_scores.csv', sig_scores, delimiter=',')
+        np.savetxt('models/sig_scores_weights.csv', sig_w_true*(self.sig_scaler), delimiter=',')
+        axes.hist(sig_scores, bins=bins, label=self.sig_labels[0], weights=sig_w_true, histtype='step') # +r' ($\mathrm{H}\rightarrow\gamma\gamma$) '+self.num_to_str(self.sig_scaler) # sig_w_true*(self.sig_scaler) #, color=self.sig_colour
+        # Kat - adding this for K-S testing
+        if ks_test:
+            label_name = self.sig_labels[0] + label
+            counts, bins, _ = axes.hist(sig_scores, bins=bins, label=label_name, weights=sig_w_true, histtype='step')
+            path_name = 'models/ks_testing/' + label_name
+            np.savetxt(path_name, counts, delimiter = ',')
+        # until here
 
         #data - need to take test frac of data
 
@@ -597,7 +623,7 @@ class Plotter(object):
 
         data_down, data_up = self.poisson_interval(data_binned, data_binned)
 
-        axes.errorbar( bin_centres, data_binned, yerr=[data_binned-data_down, data_up-data_binned], label='Data', fmt='o', ms=4, color='black', capsize=0, zorder=1)
+        #axes.errorbar( bin_centres, data_binned, yerr=[data_binned-data_down, data_up-data_binned], label='Data', fmt='o', ms=4, color='black', capsize=0, zorder=1)
 
  
 
@@ -611,7 +637,9 @@ class Plotter(object):
 
                 rew_stack.append(w_arr*k_factor)
 
-            bkg_mc_binned, _, _ = axes.hist(bkg_stack, bins=bins, label=bkg_proc_stack, weights=rew_stack, histtype='stepfilled', color=self.bkg_colours[0:len(bkg_proc_stack)], stacked=True, zorder=0)
+            np.savetxt('models/bkg_scores.csv', bkg_stack, delimiter=',')
+            np.savetxt('models/bkg_scores_weights.csv', rew_stack, delimiter=',')
+            bkg_mc_binned, _, _ = axes.hist(bkg_stack, bins=bins, label=bkg_proc_stack, weights=rew_stack, histtype='step', stacked=True, zorder=0) #self.bkg_colours[0:len(bkg_proc_stack)] #color= 'blue'
 
             bkg_stack_summed, _ = np.histogram(np.concatenate(bkg_stack), bins=bins, weights=np.concatenate(rew_stack))
 
@@ -619,7 +647,16 @@ class Plotter(object):
 
         else:
 
-            axes.hist(bkg_stack, bins=bins, label=bkg_proc_stack, weights=bkg_w_stack, histtype='stepfilled', color=self.bkg_colours[0:len(bkg_proc_stack)], stacked=True, zorder=0)
+            np.savetxt('models/bkg_scores.csv', bkg_stack, delimiter=',')
+            np.savetxt('models/bkg_scores_weights.csv', bkg_w_stack, delimiter=',')
+            axes.hist(bkg_stack, bins=bins, label=bkg_proc_stack, weights=bkg_w_stack, histtype='step', stacked=True, zorder=0) #self.bkg_colours[0:len(bkg_proc_stack)] #color= 'blue' # label=bkg_proc_stack
+            # Kat - adding this for K_S test
+            if ks_test:
+                label_name = self.bkg_labels[0] + label
+                counts, bins, _ = axes.hist(bkg_stack, bins=bins, label=label_name, weights=bkg_w_stack, histtype='step', stacked=True, zorder=0)
+                path_name = 'models/ks_testing/' + label_name
+                np.savetxt(path_name, counts, delimiter = ',')
+            # until here
 
             bkg_stack_summed, _ = np.histogram(np.concatenate(bkg_stack), bins=bins, weights=np.concatenate(bkg_w_stack))
 
@@ -629,7 +666,7 @@ class Plotter(object):
 
         bkg_std_down, bkg_std_up  = self.poisson_interval(bkg_stack_summed, sumw2_bkg)                                                  
 
-        axes.fill_between(bins, list(bkg_std_down)+[bkg_std_down[-1]], list(bkg_std_up)+[bkg_std_up[-1]], alpha=0.3, step="post", color="grey", lw=1, zorder=4, label='Simulation stat. unc.')
+        #axes.fill_between(bins, list(bkg_std_down)+[bkg_std_down[-1]], list(bkg_std_up)+[bkg_std_up[-1]], alpha=0.3, step="post", color="grey", lw=1, zorder=4, label='Simulation stat. unc.')
 
  
 
@@ -697,11 +734,11 @@ class Plotter(object):
 
         #VBF BDT
 
-        axes.axvline(0.890, ymax=0.7, color='black', linestyle='--')
+       # axes.axvline(0.890, ymax=0.7, color='black', linestyle='--')
 
-        axes.axvline(0.741, ymax=0.7, color='black', linestyle='--')
+       # axes.axvline(0.741, ymax=0.7, color='black', linestyle='--')
 
-        axes.axvspan(0, 0.741, ymax=0.7, color='grey', alpha=0.35)
+       # axes.axvspan(0, 0.741, ymax=0.7, color='grey', alpha=0.35)
 
  
 
