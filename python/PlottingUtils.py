@@ -489,8 +489,8 @@ class Plotter(object):
         axes = fig.gca()
 
         if analysis:
-            label_name = 'Train{}'.format(len(self.input_vars)) 
-            axes.plot(bkg_eff_train, sig_eff_train, label=label_name)
+            #label_name = 'Train{}'.format(len(self.input_vars)) 
+            #axes.plot(bkg_eff_train, sig_eff_train, label=label_name)
             label_name = 'Test{}'.format(len(self.input_vars)) 
             axes.plot(bkg_eff_test, sig_eff_test, label=label_name)
 
@@ -607,9 +607,12 @@ class Plotter(object):
         axes.hist(sig_scores, bins=bins, label=self.sig_labels[0], weights=sig_w_true, histtype='step') # +r' ($\mathrm{H}\rightarrow\gamma\gamma$) '+self.num_to_str(self.sig_scaler) # sig_w_true*(self.sig_scaler) #, color=self.sig_colour
         # Kat - adding this for K-S testing
         if ks_test:
+            #values, bins, _ = axes.hist(sig_scores, bins=bins, label=self.sig_labels[0], weights=sig_w_true, histtype='step')
+            #area = sum(numpy.diff(bins)*values)
             label_name = self.sig_labels[0] + label
-            counts, bins, _ = axes.hist(sig_scores, bins=bins, label=label_name, weights=sig_w_true, histtype='step')
-            path_name = 'models/ks_testing/' + label_name
+            counts, bins, _ = axes.hist(sig_scores, bins=bins, label=label_name, weights=sig_w_true, histtype='step', cumulative = True, density = True) 
+            #area = sum(np.diff(bins)*counts)
+            path_name = 'models/ks_testing/trials' + label_name
             np.savetxt(path_name, counts, delimiter = ',')
         # until here
 
@@ -653,8 +656,8 @@ class Plotter(object):
             # Kat - adding this for K_S test
             if ks_test:
                 label_name = self.bkg_labels[0] + label
-                counts, bins, _ = axes.hist(bkg_stack, bins=bins, label=label_name, weights=bkg_w_stack, histtype='step', stacked=True, zorder=0)
-                path_name = 'models/ks_testing/' + label_name
+                counts, bins, _ = axes.hist(bkg_stack, bins=bins, label=label_name, weights=bkg_w_stack, histtype='step', stacked=True, zorder=0, cumulative = True, density = True)
+                path_name = 'models/ks_testing/trials/' + label_name
                 np.savetxt(path_name, counts, delimiter = ',')
             # until here
 

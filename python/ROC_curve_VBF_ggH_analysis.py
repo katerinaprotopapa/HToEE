@@ -137,7 +137,7 @@ train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','dip
      'nSoftJets'
      ]
 """
-"""
+
 # more important to less (feature_importance_gain) - top 20
 train_vars = ['leadJetPt', 'dijetAbsDEta', 'dijetMass', 'dijetDPhi', 'dijetCentrality',
      'leadJetEn', 'leadJetPhi','subleadJetPUJID', 'diphotonPt', 'subleadJetBTagScore',
@@ -151,10 +151,10 @@ train_vars = ['subleadJetPt', 'dijetDiphoAbsDEta', 'subleadJetMass', 'leadJetEta
         'subleadJetBTagScore', 'diphotonPt', 'subleadJetPUJID', 'leadJetPhi', 'leadJetEn',
         'dijetCentrality', 'dijetDPhi', 'dijetMass', 'dijetAbsDEta', 'leadJetPt'
         ]
-
+"""
 # so here we go with the for loop
 for i in range(len(train_vars)):
-     train_vars_array = train_vars[:i]
+     train_vars_array = train_vars[i:]
 
      if __name__ == "__main__":
 

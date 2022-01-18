@@ -50,9 +50,9 @@ class BDTHelpers(object):
         self.proc_arr_test    = None
 
         #attributes for the hp optmisation and cross validation
-        self.clf              = xgb.XGBClassifier(objective='binary:logistic', n_estimators=100, 
-                                                  eta=0.05, maxDepth=4, min_child_weight=0.01, 
-                                                  subsample=0.6, colsample_bytree=0.6, gamma=1)
+        self.clf              = xgb.XGBClassifier(objective='binary:logistic', n_estimators=50, 
+                                                  eta=0.5, maxDepth=70, min_child_weight=0.8, 
+                                                  subsample=0.9, colsample_bytree=1.0, gamma=30)  # Kat and Philipp HP optimization
 
         self.hp_grid_rnge     = {'learning_rate': [0.01, 0.05, 0.1, 0.3],
                                  'max_depth':[x for x in range(3,10)],
@@ -600,8 +600,8 @@ class BDTHelpers(object):
 
         output_score_fig = self.plotter.plot_output_score(self.y_test, self.y_pred_test, self.test_weights, 
                                                           self.proc_arr_test, self.clf.predict_proba(self.X_data_test)[:,1:],
-                                                          ratio_plot=ratio_plot, norm_to_data=norm_to_data, log=log, label = 'train', ks_test = False)  
-        """
+                                                          ratio_plot=ratio_plot, norm_to_data=norm_to_data, log=log, label = 'train', ks_test = True)  
+        
         # this is to check the K-S test of the distribution
         output_score_fig_2 = self.plotter.plot_output_score(self.y_train, self.y_pred_train, self.train_weights, 
                                                           self.proc_arr_train, self.clf.predict_proba(self.X_data_train)[:,1:],
@@ -611,15 +611,13 @@ class BDTHelpers(object):
         print('saving: {0}/plotting/plots/{1}/{1}_output_score_kstest.pdf'.format(os.getcwd(), out_tag)) 
         plt.close()
         # until here
-        """
 
         # this should be added back once K-S testing is done
-        
-        Utils.check_dir('{}/plotting/plots/{}'.format(os.getcwd(),out_tag))
+        """Utils.check_dir('{}/plotting/plots/{}'.format(os.getcwd(),out_tag))
         output_score_fig.savefig('{0}/plotting/plots/{1}/{1}_output_score.pdf'.format(os.getcwd(), out_tag))
         print('saving: {0}/plotting/plots/{1}/{1}_output_score.pdf'.format(os.getcwd(), out_tag))
-        plt.close()
-        
+        plt.close()"""
+     
 
     def plot_feature_importance(self,out_tag, num_plots='single',num_feature=20,imp_type='weight',values = False):
         if num_plots=='single':
