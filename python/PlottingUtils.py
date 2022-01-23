@@ -476,7 +476,7 @@ class Plotter(object):
 
  
 
-    def plot_roc(self, y_train, y_pred_train, train_weights, y_test, y_pred_test, test_weights, out_tag='MVA', dijetcentrality_bool = False, analysis = False):
+    def plot_roc(self, y_train, y_pred_train, train_weights, y_test, y_pred_test, test_weights, out_tag='MVA', dijetcentrality_bool = False, analysis = False, nn_roc = False):
 
         bkg_eff_train, sig_eff_train, _ = roc_curve(y_train, y_pred_train, sample_weight=train_weights)
 
@@ -503,6 +503,10 @@ class Plotter(object):
             dijet_vbf = np.loadtxt('models/ROC_curve_VBF.csv', delimiter=',')
             dijet_ggh = np.loadtxt('models/ROC_curve_ggH.csv', delimiter=',')
             axes.plot(dijet_ggh, dijet_vbf, color = 'green', label = 'Dijet Centrality')
+        if nn_roc:
+            fpr = np.loadtxt('neural_networks/models/nn_roc_fpr.csv', delimiter = ',')
+            tpr = np.loadtxt('neural_networks/models/nn_roc_tpr.csv', delimiter = ',')
+            axes.plot(fpr, tpr, color = 'green', label = 'Neural Network Test')
 
         axes.set_xlabel('Background efficiency', ha='right', x=1, size=13)
 

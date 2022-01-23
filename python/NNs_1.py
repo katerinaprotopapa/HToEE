@@ -1,3 +1,4 @@
+# imports
 import argparse
 import pandas as pd
 import numpy as np
@@ -15,6 +16,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
+from sklearn.metrics import roc_auc_score
 #from sklearn import cross_validation
 from os import path, system
 from array import array
@@ -40,13 +42,24 @@ from keras.optimizers import Adam
 from keras.metrics import categorical_crossentropy
 from keras.metrics import binary_crossentropy
 
+#Define key quantities, use to tune NN
+num_epochs = 4
+batch_size = 400
+val_split = 0.3
+learning_rate = 0.001
+
+epochs = np.linspace(1,num_epochs,num_epochs,endpoint=True).astype(int) #For plotting
+binNames = ['ggH','VBF'] 
+bins = 50
+
+#Directories
 modelDir = 'neural_networks/models/'
 plotDir  = 'neural_networks/plots/'
 
 #Define the variables, this is an arbitrary selection
 # Philipp
 """
-train_vars = ['leadPhotonIDMVA','subleadPhotonIDMVA',
+ = ['leadPhotonIDMVA','subleadPhotonIDMVA',
     'diphotonMass','diphotonPt',
     'leadPhotonPtOvM','subleadPhotonPtOvM',
     'leadPhotonEta','subleadPhotonEta',
@@ -58,13 +71,13 @@ train_vars = ['leadPhotonIDMVA','subleadPhotonIDMVA',
     ]
     """
 # Kat
-allVars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
+train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
      'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
      'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
-     'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi',
+     'leadPhotonEta', 'leadPhotonPtOvM', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi',
      'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
      'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
-     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
+     'subleadPhotonEta', 'subleadPhotonPtOvM', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
      'subleadPhotonEn','subleadPhotonPt', 
      'subleadJetDiphoDPhi','subleadJetDiphoDEta',
      'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
@@ -75,137 +88,146 @@ allVars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphot
      'nSoftJets'
      ]
 
-#dataframes = []
-#dataframes.append(pd.read_csv('2017/Data/DataFrames/Data_VBF_ggH_BDT_df_2017.csv'))
-#df_data = pd.concat(dataframes, sort=False, axis=0 )
+#Add proc to shuffle with data
+train_vars.append('proc')
 
+#Load the dataframe
 dataframes = []
 dataframes.append(pd.read_csv('2017/MC/DataFrames/VBF_VBF_BDT_df_2017.csv'))
 dataframes.append(pd.read_csv('2017/MC/DataFrames/ggH_VBF_BDT_df_2017.csv'))
-x_train = pd.concat(dataframes, sort=False, axis=0 )
-#x_test = pd.concat(dataframes, sort=False, axis=0 )
+df = pd.concat(dataframes, sort=False, axis=0 )
+
+#Data dataframe
+#dataframes = []
+#dataframes.append(pd.read_csv('2017/Data/DataFrames/Data_VBF_ggH_BDT_df_2017.csv'))
+#x_data = pd.concat(dataframes, sort=False, axis=0 )
+
+#dataframe of train_vars
+data = df[train_vars]
 
 #Shuffle dataframe
-x_train = x_train.sample(frac=1)
+data = data.sample(frac=1)
 
 #Define the procs as the labels
-y_train_labels = np.array(x_train['proc'])#,columns='proc')
-#y_train_labels_num = pd.DataFrame()
-#y_train_labels_num['proc'] = np.where(y_train_labels=='VBF',1,0)
-y_train_labels_num = np.where(y_train_labels=='VBF',1.0,0.0)
+y_train_labels = np.array(data['proc'])
+y_train_labels_hot = np.where(y_train_labels=='VBF',1,0)
+#y_train_labels_hot = np_utils.to_categorical(y_train_labels_num, num_classes=2) # removing one hot encoding for binary classifier | keep for multiclass
 
-#The 61 columns are:
-
-#'Unnamed: 0', 'diphotonMass', 'diphotonPt', 'diphotonEta',
-
-#'diphotonPhi', 'diphotonCosPhi', 'diphotonSigmaMoM',
-
-#'leadPhotonIDMVA', 'leadPhotonPtOvM', 'leadPhotonEta',
-
-#'leadPhotonEn', 'leadPhotonMass', 'leadPhotonPt', 'leadPhotonPhi',
-
-#'subleadPhotonIDMVA', 'subleadPhotonPtOvM', 'subleadPhotonEta',
-
-#'subleadPhotonEn', 'subleadPhotonMass', 'subleadPhotonPt',
-
-#'subleadPhotonPhi', 'dijetMass', 'dijetPt', 'dijetEta', 'dijetPhi',
-
-#'dijetDPhi', 'dijetAbsDEta', 'dijetCentrality', 'dijetMinDRJetPho',
-
-#'dijetDiphoAbsDEta', 'leadJetPUJID', 'leadJetPt', 'leadJetEn',
-
-#'leadJetEta', 'leadJetPhi', 'leadJetMass', 'leadJetBTagScore',
-
-#'leadJetDiphoDEta', 'leadJetDiphoDPhi', 'subleadJetPUJID',
-
-#'subleadJetPt', 'subleadJetEn', 'subleadJetEta', 'subleadJetPhi',
-
-#'subleadJetMass', 'subleadJetBTagScore', 'subleadJetDiphoDPhi',
-
-#'subleadJetDiphoDEta', 'subsubleadJetPUJID', 'subsubleadJetPt',
-
-#'subsubleadJetEn', 'subsubleadJetEta', 'subsubleadJetPhi',
-
-#'subsubleadJetMass', 'subsubleadJetBTagScore', 'weight',
-
-#'centralObjectWeight', 'nSoftJets', 'genWeight', 'proc', 'year']
-
- 
-
-#Need to remove: 'Unnamed: 0','weight','centralObjectWeight', 'genWeight', 'year'
-
-x_train = x_train.drop(columns=['Unnamed: 0','weight','centralObjectWeight', 'genWeight', 'year','proc'])
-#x_test = x_test.drop(columns=['Unnamed: 0','weight','centralObjectWeight', 'genWeight', 'year'])
+#Remove proc after shuffle
+data = data.drop(columns=['proc'])
 
 #Preselection cuts
-#    'diphotonMass > 100 and diphotonMass < 180 and leadPhotonPtOvM > 0.333 and subleadPhotonPtOvM > 0.25'
-x_train = x_train[x_train.diphotonMass>100.]
-x_train = x_train[x_train.diphotonMass<180.]
-x_train = x_train[x_train.leadPhotonPtOvM>0.333]
-x_train = x_train[x_train.subleadPhotonPtOvM>0.25]
+data = data[data.diphotonMass>100.]
+data = data[data.diphotonMass<180.]
+data = data[data.leadPhotonPtOvM>0.333]
+data = data[data.subleadPhotonPtOvM>0.25]
 
-#Set -999.0 values to -10.0 to decrease effect on scaling
-x_train = x_train.replace(-999.0,-10.0)
+#Set -999.0 values to -10.0 to decrease effect on scaling 
+data = data.replace(-999.0,-10.0) 
 
-#Need to scale the variables to a range from 0-1
+#Scaling the variables to a range from 0-1
 scaler = MinMaxScaler()
-x_train_scaled = pd.DataFrame(scaler.fit_transform(x_train), columns=x_train.columns)
+data_scaled = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
-num_inputs  = x_train_scaled.shape[1]
+#Input shape for the first hidden layer
+num_inputs  = data_scaled.shape[1]
 
-model=Sequential([Dense(units=100,input_shape=(63,),activation='relu'),  # activation = 'relu' - hidden layer
+#Splitting the dataframe into training and test
+x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data_scaled, y_train_labels_hot, df['weight'], df['proc'], test_size = val_split, shuffle=True)
+
+#Initialize the model
+model=Sequential([Dense(units=100,input_shape=(num_inputs,),activation='relu'),
                 Dense(units=100,activation='relu'),
                 #Dense(units=100,activation='relu'),
-                Dense(units=1,activation='softmax')])  # activation = 'softmax' - output layer
+                Dense(units=1,activation='sigmoid')]) #activation = 'sigmoid': binary classifier | activation = 'softmax': multiclass classifier
 
-model.compile(optimizer=Adam(lr=0.01),loss='binary_crossentropy',metrics=['accuracy'])
-#model.compile(optimizer=Adam(learning_rate=0.001),loss='sparse_categorical_crossentropy',metrics=['accuracy'])
-#model.compile(optimizer=Adam,loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+#Compile the model
+model.compile(optimizer=Adam(lr=learning_rate),loss='binary_crossentropy',metrics=['accuracy'])
+
 model.summary()
 
-#Not sure why this works, x_train_scaled is a df, y_train_labels is an array, I thought they would have to be the same
-model.fit(x=x_train_scaled,y=y_train_labels_num,batch_size=400,epochs=5,shuffle=True,verbose=2)  # verbose = num of classes
-print(model.summary())
-# commented them out for now until I finish the roc curve thing
+#Training the model
+history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,shuffle=True,verbose=2)
 
+# --------------------------------------------------------------
+# OUTPUT SCORE
+y_pred_test = model.predict_proba(x = x_test)
+x_test['proc'] = proc_arr_test.tolist()
+x_test['weight'] = test_w.to_numpy()
+x_test_vbf = x_test[x_test['proc'] == 'VBF']
+x_test_ggh = x_test[x_test['proc'] == 'ggH']
+# now weights
+vbf_w = x_test_vbf['weight'] / x_test_vbf['weight'].sum()
+ggh_w = x_test_ggh['weight'] / x_test_ggh['weight'].sum()
 
-# further stuff that we are working on
-"""
-# Output Score
-x_test['NN_output'] = model.predict(x=x_test,batch_size=400,verbose=0)
-y_pred_vbf = x_test[x_test['proc'] == 'VBF']['NN_output']
-y_pred_vbf = x_test[x_test['proc'] == 'ggH']['NN_output']
+x_test_vbf = x_test_vbf.drop(columns=['proc'])
+x_test_ggh = x_test_ggh.drop(columns=['proc'])
+x_test_vbf = x_test_vbf.drop(columns=['weight'])
+x_test_ggh = x_test_ggh.drop(columns=['weight'])
 
-bins = 50
-axes.hist(y_pred_vbf, bins=bins, label='VBF', density = True, histtype='step') #weights=sig_w_true
-axes.hist(y_pred_ggh, bins=bins, label='ggH', density = True, histtype='step') #weights=sig_w_true
-plt.savefig('neural_networks/models/plots/output_score_trial', dpi = 200)
+output_vbf = model.predict_proba(x=x_test_vbf)
+output_ggh = 1 - model.predict_proba(x=x_test_ggh)
 
-
-# ROC curve attempts
-# split to train and test data
-x_train, x_test, y_train, y_test = train_test_split(x_train_scaled, y_train_labels_num, test_size = 0.3)
-model.fit(x=x_train, y=y_train, batch_size=400, epochs=5, shuffle=True, verbose=2)  # verbose = num of classes
-print(model.summary())
-
-y_pred_test = model.predict(x_test).ravel()
+# ----
+# ROC CURVE
+# testing
+#mask_vbf = (y_test[:] == 1)
+#mask_ggh = (y_test[:] == 0)
+#y_test = np.concatenate((y_test[mask_vbf], y_test[mask_ggh]), axis = None)
+#y_pred_test = np.concatenate((output_vbf, output_ggh), axis = None)
+#y_pred_test = model.predict_proba(x = x_test_old)
 fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_test)
-y_pred_keras = model.predict(x_test)
-auc_keras_test = auc(fpr_keras, tpr_keras)
+auc_keras_test = roc_auc_score(y_test, y_pred_test)
+#np.savetxt('neural_networks/models/nn_roc_fpr.csv', fpr_keras, delimiter=',')
+#np.savetxt('neural_networks/models/nn_roc_tpr.csv', tpr_keras, delimiter=',')
 print("Area under ROC curve for testing: ", auc_keras_test)
 
-plt.plot(fpr_keras, tpr_keras)
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.savefig('neural_networks/models/plots/roc_trial', dpi = 200)
-plt.close()
+# training
+y_pred_train = model.predict_proba(x = x_train)
+fpr_keras_tr, tpr_keras_tr, thresholds_keras = roc_curve(y_train, y_pred_train)
+auc_keras_train = roc_auc_score(y_train, y_pred_train)
+print("Area under ROC curve for training: ", auc_keras_train)
 
 
-# things to add - for the train/test break - Philipp
-#x_test = pd.concat(dataframes, sort=False, axis=0 )
-#x_test = x_test.drop(columns=['Unnamed: 0','weight','centralObjectWeight', 'genWeight', 'year','proc'])
-#y_pred = model.predict(x=x_test,batch_size=400,verbose=0)
-"""
+
+# -------------------------------------------------------------------
+# PLOTTING AYE
+
+# OUTPUT SCORE
+def plot_output_score(signal=output_vbf,bkg=output_ggh,name='plotting/NN_plots/NN_Output_Score',signal_label='VBF',bkg_label='ggH',bins=50,density=False,histtype='step', sig_w = vbf_w, bkg_w = ggh_w):
+     fig, ax = plt.subplots()
+     ax.hist(signal, bins=bins, label=signal_label, weights = sig_w, histtype=histtype)
+     ax.hist(bkg, bins=bins, label=bkg_label, weights = bkg_w, histtype=histtype) 
+     ax.set_xlabel('Output Score', ha='right', x=1, size=9)
+     ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
+     ax.legend()
+     plt.savefig(name, dpi = 200)
+     print("Plotting Output Score")
+     plt.close()
+
+# ROC CURVE
+def roc_score(fpr_train = fpr_keras_tr, tpr_train = tpr_keras_tr,fpr_test = fpr_keras, tpr_test = tpr_keras, name = 'plotting/NN_plots/NN_ROC_curve', train = False):
+     fig, ax = plt.subplots()
+     if train:
+          ax.plot(fpr_train, tpr_train, label = 'Train')
+     ax.plot(fpr_test, tpr_test, label = 'Test')
+     ax.legend()
+     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
+     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
+     ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
+     plt.savefig(name, dpi = 200)
+     print("Plotting ROC Score")
+     plt.close()
+     
+# TRAIN VS TEST
+
+
+
+# ----------------------------------------------------------------------
+# RUN
+plot_output_score()
+roc_score(train = True)
+
 
 '''
 
@@ -235,3 +257,33 @@ print(NNaccuracy)
 #trainTotal = pd.read_pickle(opts.dataFrame)
 #print 'Successfully loaded the dataframe'
 '''
+
+
+
+# RANDOM STUFF THAT DIDNT WANT TO DELETE
+#model.compile(optimizer=Adam(learning_rate=0.001),loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+#model.compile(optimizer=Adam,loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+
+#model.fit(x=x_train_scaled,y=y_train_onehot,batch_size=400,epochs=3,shuffle=True,verbose=2)  # verbose = num of classes
+#print(model.summary())
+# commented them out for now until I finish the roc curve thing
+
+#The 61 columns are:
+#'Unnamed: 0', 'diphotonMass', 'diphotonPt', 'diphotonEta',
+#'diphotonPhi', 'diphotonCosPhi', 'diphotonSigmaMoM',
+#'leadPhotonIDMVA', 'leadPhotonPtOvM', 'leadPhotonEta',
+#'leadPhotonEn', 'leadPhotonMass', 'leadPhotonPt', 'leadPhotonPhi',
+#'subleadPhotonIDMVA', 'subleadPhotonPtOvM', 'subleadPhotonEta',
+#'subleadPhotonEn', 'subleadPhotonMass', 'subleadPhotonPt',
+#'subleadPhotonPhi', 'dijetMass', 'dijetPt', 'dijetEta', 'dijetPhi',
+#'dijetDPhi', 'dijetAbsDEta', 'dijetCentrality', 'dijetMinDRJetPho',
+#'dijetDiphoAbsDEta', 'leadJetPUJID', 'leadJetPt', 'leadJetEn',
+#'leadJetEta', 'leadJetPhi', 'leadJetMass', 'leadJetBTagScore',
+#'leadJetDiphoDEta', 'leadJetDiphoDPhi', 'subleadJetPUJID',
+#'subleadJetPt', 'subleadJetEn', 'subleadJetEta', 'subleadJetPhi',
+#'subleadJetMass', 'subleadJetBTagScore', 'subleadJetDiphoDPhi',
+#'subleadJetDiphoDEta', 'subsubleadJetPUJID', 'subsubleadJetPt',
+#'subsubleadJetEn', 'subsubleadJetEta', 'subsubleadJetPhi',
+#'subsubleadJetMass', 'subsubleadJetBTagScore', 'weight',
+#'centralObjectWeight', 'nSoftJets', 'genWeight', 'proc', 'year']
+#Need to remove: 'Unnamed: 0','weight','centralObjectWeight', 'genWeight', 'year'
