@@ -106,6 +106,12 @@ df = pd.concat(dataframes, sort=False, axis=0 )
 #dataframe of train_vars
 data = df[train_vars]
 
+#Preselection cuts
+data = data[data.diphotonMass>100.]
+data = data[data.diphotonMass<180.]
+data = data[data.leadPhotonPtOvM>0.333]
+data = data[data.subleadPhotonPtOvM>0.25]
+
 #Shuffle dataframe
 data = data.sample(frac=1)
 
@@ -118,12 +124,6 @@ weights = np.array(data['weight'])
 #Remove proc and weight after shuffle
 data = data.drop(columns=['proc'])
 data = data.drop(columns=['weight']) 
-
-#Preselection cuts
-data = data[data.diphotonMass>100.]
-data = data[data.diphotonMass<180.]
-data = data[data.leadPhotonPtOvM>0.333]
-data = data[data.subleadPhotonPtOvM>0.25]
 
 #Set -999.0 values to -10.0 to decrease effect on scaling 
 data = data.replace(-999.0,-10.0) 
@@ -156,6 +156,7 @@ model.summary()
 #proc_arr_test = proc_arr_test.tolist()
 
 #Training the model
+#train_w = train_w / sum(train_w)
 history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
 
 # --------------------------------------------------------------
