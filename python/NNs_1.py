@@ -88,8 +88,9 @@ train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','dip
      'nSoftJets'
      ]
 
-#Add proc to shuffle with data
-train_vars.append('proc')
+#Add proc and weight to shuffle with data 
+train_vars.append('proc') 
+train_vars.append('weight') 
 
 #Load the dataframe
 dataframes = []
@@ -112,9 +113,11 @@ data = data.sample(frac=1)
 y_train_labels = np.array(data['proc'])
 y_train_labels_hot = np.where(y_train_labels=='VBF',1,0)
 #y_train_labels_hot = np_utils.to_categorical(y_train_labels_num, num_classes=2) # removing one hot encoding for binary classifier | keep for multiclass
+weights = np.array(data['weight'])
 
-#Remove proc after shuffle
+#Remove proc and weight after shuffle
 data = data.drop(columns=['proc'])
+data = data.drop(columns=['weight']) 
 
 #Preselection cuts
 data = data[data.diphotonMass>100.]
@@ -133,7 +136,8 @@ data_scaled = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 num_inputs  = data_scaled.shape[1]
 
 #Splitting the dataframe into training and test
-x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data_scaled, y_train_labels_hot, df['weight'], df['proc'], test_size = val_split, shuffle=True)
+x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data_scaled, y_train_labels_hot, weights, y_train_labels, test_size = val_split, shuffle=True)
+#x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data_scaled, y_train_labels_hot, df['weight'], df['proc'], test_size = val_split, shuffle=True)
 
 #Initialize the model
 model=Sequential([Dense(units=100,input_shape=(num_inputs,),activation='relu'),
@@ -143,30 +147,59 @@ model=Sequential([Dense(units=100,input_shape=(num_inputs,),activation='relu'),
 
 #Compile the model
 model.compile(optimizer=Adam(lr=learning_rate),loss='binary_crossentropy',metrics=['accuracy'])
-
 model.summary()
 
+# to avoid duplicate axis - pandas object
+#train_w = train_w.to_numpy()
+#test_w = test_w.to_numpy()
+#proc_arr_train = proc_arr_train.tolist()
+#proc_arr_test = proc_arr_test.tolist()
+
 #Training the model
-history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,shuffle=True,verbose=2)
+history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
 
 # --------------------------------------------------------------
 # OUTPUT SCORE
-y_pred_test = model.predict_proba(x = x_test)
-x_test['proc'] = proc_arr_test.tolist()
-x_test['weight'] = test_w.to_numpy()
-x_test_vbf = x_test[x_test['proc'] == 'VBF']
-x_test_ggh = x_test[x_test['proc'] == 'ggH']
-# now weights
-vbf_w = x_test_vbf['weight'] / x_test_vbf['weight'].sum()
-ggh_w = x_test_ggh['weight'] / x_test_ggh['weight'].sum()
+y_pred_test = model.predict_proba(x=x_test)  
+x_test['proc'] = proc_arr_test 
+x_test['weight'] = test_w 
+x_test['output_score_vbf'] = y_pred_test
+x_test['output_score_ggh'] = 1 - y_pred_test
+
+x_test_vbf = x_test[x_test['proc'] == 'VBF'] 
+x_test_ggh = x_test[x_test['proc'] == 'ggH'] 
+
+# Weights 
+vbf_w = x_test_vbf['weight'] / x_test_vbf['weight'].sum() 
+ggh_w = x_test_ggh['weight'] / x_test_ggh['weight'].sum() 
+
+output_vbf = np.array(x_test_vbf['output_score_vbf']) 
+output_ggh = np.array(x_test_ggh['output_score_ggh']) 
 
 x_test_vbf = x_test_vbf.drop(columns=['proc'])
 x_test_ggh = x_test_ggh.drop(columns=['proc'])
 x_test_vbf = x_test_vbf.drop(columns=['weight'])
 x_test_ggh = x_test_ggh.drop(columns=['weight'])
+x_test_vbf = x_test_vbf.drop(columns=['output_score_vbf'])
+x_test_ggh = x_test_ggh.drop(columns=['output_score_ggh'])
 
-output_vbf = model.predict_proba(x=x_test_vbf)
-output_ggh = 1 - model.predict_proba(x=x_test_ggh)
+# OUTPUT SCORE
+#y_pred_test = model.predict_proba(x = x_test)
+#x_test['proc'] = proc_arr_test.tolist()
+#x_test['weight'] = test_w.to_numpy()
+#x_test_vbf = x_test[x_test['proc'] == 'VBF']
+#x_test_ggh = x_test[x_test['proc'] == 'ggH']
+# now weights
+#vbf_w = x_test_vbf['weight'] / x_test_vbf['weight'].sum()
+#ggh_w = x_test_ggh['weight'] / x_test_ggh['weight'].sum()
+
+#x_test_vbf = x_test_vbf.drop(columns=['proc'])
+#x_test_ggh = x_test_ggh.drop(columns=['proc'])
+#x_test_vbf = x_test_vbf.drop(columns=['weight'])
+#x_test_ggh = x_test_ggh.drop(columns=['weight'])
+
+#output_vbf = model.predict_proba(x=x_test_vbf)
+#output_ggh = 1 - model.predict_proba(x=x_test_ggh)
 
 # ----
 # ROC CURVE
@@ -187,6 +220,19 @@ y_pred_train = model.predict_proba(x = x_train)
 fpr_keras_tr, tpr_keras_tr, thresholds_keras = roc_curve(y_train, y_pred_train)
 auc_keras_train = roc_auc_score(y_train, y_pred_train)
 print("Area under ROC curve for training: ", auc_keras_train)
+
+# TRAIN VS TEST ON OUTPUT SCORE
+def train_vs_test_analysis(x_train = x_train, proc_arr_train = proc_arr_train, train_w = train_w):
+     x_train['proc'] = proc_arr_train
+     x_train['weight'] = train_w
+     x_train_vbf = x_train[x_train['proc'] == 'VBF']
+     # now weights
+     vbf_w_tr = x_train_vbf['weight'] / x_train_vbf['weight'].sum()
+
+     x_train_vbf = x_train_vbf.drop(columns=['proc'])
+     x_train_vbf = x_train_vbf.drop(columns=['weight'])
+     output_vbf_train = model.predict_proba(x=x_train_vbf)
+     return output_vbf_train, vbf_w_tr
 
 
 
@@ -220,6 +266,31 @@ def roc_score(fpr_train = fpr_keras_tr, tpr_train = tpr_keras_tr,fpr_test = fpr_
      plt.close()
      
 # TRAIN VS TEST
+def train_test_ratio_plot(output_vbf_test = output_vbf, vbf_w_te = vbf_w, bins = bins, histtype='step', name = 'plotting/NN_plots/test_train_ratio', closeup = False):
+     output_vbf_train, vbf_w_tr = train_vs_test_analysis()
+     fig, ax = plt.subplots()
+     counts_train, bins_train, _ = ax.hist(output_vbf_train, bins=bins, label='Train', weights = vbf_w_tr, histtype=histtype)
+     counts_test, bins_test, _ = ax.hist(output_vbf_test, bins=bins, label='Test', weights = vbf_w_te, histtype=histtype)
+     ratio = counts_train / counts_test
+     ax.plot(ratio, 'o')
+     #ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
+     ax.set_ylabel('Train / Test',ha='right', y=1, size=9)
+     ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
+     plt.savefig(name, dpi = 200)
+     print("Plotting Train and Test Ratio")
+     plt.close()
+     # zoom in
+     if closeup:
+          fig, ax = plt.subplots()
+          ax.plot(ratio, 'o')
+          ax.set_ylabel('Train / Test',ha='right', y=1, size=9)
+          ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
+          ax.set_ylim(0.7, 1.3)
+          name = name + '_closeup'
+          plt.savefig(name, dpi = 200)
+          print("Plotting Train and Test Ratio - Zoomed In")
+     plt.close()
+
 
 
 
@@ -227,6 +298,7 @@ def roc_score(fpr_train = fpr_keras_tr, tpr_train = tpr_keras_tr,fpr_test = fpr_
 # RUN
 plot_output_score()
 roc_score(train = True)
+train_test_ratio_plot(closeup = True)
 
 
 '''
