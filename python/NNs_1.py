@@ -155,9 +155,16 @@ model.summary()
 #proc_arr_train = proc_arr_train.tolist()
 #proc_arr_test = proc_arr_test.tolist()
 
-# Normalizing training weights
-#train_w_df = pd.DataFrame()
-#train_w_df['weight'] = train_w
+# Equalizing training weights
+train_w_df = pd.DataFrame()
+train_w = 1000 * train_w # to make loss function O(1)
+train_w_df['weight'] = train_w
+train_w_df['proc'] = proc_arr_train
+vbf_sum_w = train_w_df[train_w_df['proc'] == 'VBF']['weight'].sum()
+ggh_sum_w = train_w_df[train_w_df['proc'] == 'ggH']['weight'].sum()
+train_w_df[train_w_df['proc'] == 'VBF']['weight'] = train_w_df[train_w_df['proc'] == 'VBF']['weight'] * ggh_sum_w / vbf_sum_w
+train_w = np.array(train_w_df['weight'])
+
 #train_w_norm = train_w_df['weight'] / train_w_df['weight'].sum()
 #train_w_scaled = pd.DataFrame(scaler.fit_transform(train_w_df), columns=train_w_df.columns)
 #train_w_scaled = np.array(train_w_scaled)
@@ -165,7 +172,6 @@ model.summary()
 #train_w_scaled = np.compress(condition=condition, a=np.array(train_w_scaled))
 
 #Training the model
-train_w = 1000 * train_w
 history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
 
 # --------------------------------------------------------------
