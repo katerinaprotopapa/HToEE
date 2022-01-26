@@ -155,34 +155,43 @@ model.summary()
 #proc_arr_train = proc_arr_train.tolist()
 #proc_arr_test = proc_arr_test.tolist()
 
+# Normalizing training weights
+train_w_df = pd.DataFrame()
+train_w_df['weight'] = train_w
+train_w_norm = train_w_df['weight'] / train_w_df['weight'].sum()
+train_w_scaled = pd.DataFrame(scaler.fit_transform(train_w_df), columns=train_w_df.columns)
+train_w_scaled = np.array(train_w_scaled)
+condition = np.ones(len(train_w_scaled))
+train_w_scaled = np.compress(condition=condition, a=np.array(train_w_scaled))
+
 #Training the model
-#train_w = train_w / sum(train_w)
-history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
+train_w = train_w / sum(train_w)
+history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w_scaled,shuffle=True,verbose=2)
 
 # --------------------------------------------------------------
 # OUTPUT SCORE
 y_pred_test = model.predict_proba(x=x_test)  
 x_test['proc'] = proc_arr_test 
 x_test['weight'] = test_w 
-x_test['output_score_vbf'] = y_pred_test
-x_test['output_score_ggh'] = 1 - y_pred_test
+x_test['output_score'] = y_pred_test
+#x_test['output_score_vbf'] = y_pred_test
+#x_test['output_score_ggh'] = y_pred_test
 
 x_test_vbf = x_test[x_test['proc'] == 'VBF'] 
 x_test_ggh = x_test[x_test['proc'] == 'ggH'] 
-
 # Weights 
 vbf_w = x_test_vbf['weight'] / x_test_vbf['weight'].sum() 
 ggh_w = x_test_ggh['weight'] / x_test_ggh['weight'].sum() 
 
-output_vbf = np.array(x_test_vbf['output_score_vbf']) 
-output_ggh = np.array(x_test_ggh['output_score_ggh']) 
+output_vbf = np.array(x_test_vbf['output_score']) 
+output_ggh = np.array(x_test_ggh['output_score']) 
 
 x_test_vbf = x_test_vbf.drop(columns=['proc'])
 x_test_ggh = x_test_ggh.drop(columns=['proc'])
 x_test_vbf = x_test_vbf.drop(columns=['weight'])
 x_test_ggh = x_test_ggh.drop(columns=['weight'])
-x_test_vbf = x_test_vbf.drop(columns=['output_score_vbf'])
-x_test_ggh = x_test_ggh.drop(columns=['output_score_ggh'])
+x_test_vbf = x_test_vbf.drop(columns=['output_score'])
+x_test_ggh = x_test_ggh.drop(columns=['output_score'])
 
 # OUTPUT SCORE
 #y_pred_test = model.predict_proba(x = x_test)
