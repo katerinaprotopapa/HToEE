@@ -156,17 +156,17 @@ model.summary()
 #proc_arr_test = proc_arr_test.tolist()
 
 # Normalizing training weights
-train_w_df = pd.DataFrame()
-train_w_df['weight'] = train_w
-train_w_norm = train_w_df['weight'] / train_w_df['weight'].sum()
-train_w_scaled = pd.DataFrame(scaler.fit_transform(train_w_df), columns=train_w_df.columns)
-train_w_scaled = np.array(train_w_scaled)
-condition = np.ones(len(train_w_scaled))
-train_w_scaled = np.compress(condition=condition, a=np.array(train_w_scaled))
+#train_w_df = pd.DataFrame()
+#train_w_df['weight'] = train_w
+#train_w_norm = train_w_df['weight'] / train_w_df['weight'].sum()
+#train_w_scaled = pd.DataFrame(scaler.fit_transform(train_w_df), columns=train_w_df.columns)
+#train_w_scaled = np.array(train_w_scaled)
+#condition = np.ones(len(train_w_scaled))
+#train_w_scaled = np.compress(condition=condition, a=np.array(train_w_scaled))
 
 #Training the model
-train_w = train_w / sum(train_w)
-history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w_scaled,shuffle=True,verbose=2)
+train_w = 1000 * train_w
+history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
 
 # --------------------------------------------------------------
 # OUTPUT SCORE
