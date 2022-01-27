@@ -316,7 +316,6 @@ plot_output_score()
 roc_score(train = True)
 train_test_ratio_plot(closeup = True)
 
-
 '''
 
 #Evaluate performance, no priors
