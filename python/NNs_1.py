@@ -10,6 +10,7 @@ import pickle
 import ROOT as r
 r.gROOT.SetBatch(True)
 import sys
+from itertools import product
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
@@ -17,6 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix
 #from sklearn import cross_validation
 from os import path, system
 from array import array
@@ -41,12 +43,13 @@ from keras.layers import Flatten
 from keras.optimizers import Adam
 from keras.metrics import categorical_crossentropy
 from keras.metrics import binary_crossentropy
+import keras.metrics
 
 #Define key quantities, use to tune NN
-num_epochs = 4
+num_epochs = 25
 batch_size = 400
-val_split = 0.3
-learning_rate = 0.001
+val_split = 0.25
+learning_rate = 0.01 #0.001
 
 epochs = np.linspace(1,num_epochs,num_epochs,endpoint=True).astype(int) #For plotting
 binNames = ['ggH','VBF'] 
@@ -59,7 +62,7 @@ plotDir  = 'neural_networks/plots/'
 #Define the variables, this is an arbitrary selection
 # Philipp
 """
- = ['leadPhotonIDMVA','subleadPhotonIDMVA',
+ train_vars = ['leadPhotonIDMVA','subleadPhotonIDMVA',
     'diphotonMass','diphotonPt',
     'leadPhotonPtOvM','subleadPhotonPtOvM',
     'leadPhotonEta','subleadPhotonEta',
@@ -142,7 +145,7 @@ x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test
 #Initialize the model
 model=Sequential([Dense(units=100,input_shape=(num_inputs,),activation='relu'),
                 Dense(units=100,activation='relu'),
-                #Dense(units=100,activation='relu'),
+                Dense(units=100,activation='relu'),
                 Dense(units=1,activation='sigmoid')]) #activation = 'sigmoid': binary classifier | activation = 'softmax': multiclass classifier
 
 #Compile the model
@@ -157,24 +160,36 @@ model.summary()
 
 # Equalizing training weights
 train_w_df = pd.DataFrame()
-train_w = 1000 * train_w # to make loss function O(1)
+train_w = 100 * train_w # to make loss function O(1)
 train_w_df['weight'] = train_w
 train_w_df['proc'] = proc_arr_train
 vbf_sum_w = train_w_df[train_w_df['proc'] == 'VBF']['weight'].sum()
 ggh_sum_w = train_w_df[train_w_df['proc'] == 'ggH']['weight'].sum()
-train_w_df[train_w_df['proc'] == 'VBF']['weight'] = train_w_df[train_w_df['proc'] == 'VBF']['weight'] * ggh_sum_w / vbf_sum_w
+train_w_df.loc[train_w_df.proc == 'VBF','weight'] = (train_w_df[train_w_df['proc'] == 'VBF']['weight'] * ggh_sum_w / vbf_sum_w) # THIS LINE !
 train_w = np.array(train_w_df['weight'])
 
-#train_w_norm = train_w_df['weight'] / train_w_df['weight'].sum()
-#train_w_scaled = pd.DataFrame(scaler.fit_transform(train_w_df), columns=train_w_df.columns)
-#train_w_scaled = np.array(train_w_scaled)
-#condition = np.ones(len(train_w_scaled))
-#train_w_scaled = np.compress(condition=condition, a=np.array(train_w_scaled))
 
 #Training the model
-history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
+history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2, validation_split = 0.10)
 
-# --------------------------------------------------------------
+
+
+# TEMP
+# For Loss Fn VS Epoch
+
+#num_epochs = 1
+#loop_epochs = 30
+#for i in range(50):
+ #   history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
+
+
+
+
+
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+
 # OUTPUT SCORE
 y_pred_test = model.predict_proba(x=x_test)  
 x_test['proc'] = proc_arr_test 
@@ -237,6 +252,7 @@ fpr_keras_tr, tpr_keras_tr, thresholds_keras = roc_curve(y_train, y_pred_train)
 auc_keras_train = roc_auc_score(y_train, y_pred_train)
 print("Area under ROC curve for training: ", auc_keras_train)
 
+# ---
 # TRAIN VS TEST ON OUTPUT SCORE
 def train_vs_test_analysis(x_train = x_train, proc_arr_train = proc_arr_train, train_w = train_w):
      x_train['proc'] = proc_arr_train
@@ -250,10 +266,35 @@ def train_vs_test_analysis(x_train = x_train, proc_arr_train = proc_arr_train, t
      output_vbf_train = model.predict_proba(x=x_train_vbf)
      return output_vbf_train, vbf_w_tr
 
+# ---
+#ACCURACY SCORE
+#output_score_vbf = np.array(x_test_vbf['output_score'],ndmin=2)
+#output_score_ggh = np.array(x_test_ggh['output_score'],ndmin=2)
+#output_score = np.concatenate((output_score_ggh,output_score_vbf),axis=0)
+#y_pred = output_score.argmax(axis=0)
+output_score_vbf = y_pred_test[:,0]
+output_score_vbf_list = list(output_score_vbf)
+y_pred = []
+for i in output_score_vbf_list:
+    if i>0.5:
+        y_pred.append(1)
+    else:
+        y_pred.append(0)
+y_true = y_test
+print 'Accuracy score: '
+NNaccuracy = accuracy_score(y_true, y_pred)
+print(NNaccuracy)
+
+# ---
+#CONFUSION MATRIX
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred)
+print(cm)
 
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # PLOTTING AYE
+# ----------------------------------------------------------------------
+
 
 # OUTPUT SCORE
 def plot_output_score(signal=output_vbf,bkg=output_ggh,name='plotting/NN_plots/NN_Output_Score',signal_label='VBF',bkg_label='ggH',bins=50,density=False,histtype='step', sig_w = vbf_w, bkg_w = ggh_w):
@@ -289,7 +330,7 @@ def train_test_ratio_plot(output_vbf_test = output_vbf, vbf_w_te = vbf_w, bins =
      counts_test, bins_test, _ = ax.hist(output_vbf_test, bins=bins, label='Test', weights = vbf_w_te, histtype=histtype)
      ratio = counts_train / counts_test
      ax.plot(ratio, 'o')
-     #ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
+     ax.set_xlabel('Bins', ha='right', x=1, size=9)
      ax.set_ylabel('Train / Test',ha='right', y=1, size=9)
      ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
      plt.savefig(name, dpi = 200)
@@ -299,6 +340,7 @@ def train_test_ratio_plot(output_vbf_test = output_vbf, vbf_w_te = vbf_w, bins =
      if closeup:
           fig, ax = plt.subplots()
           ax.plot(ratio, 'o')
+          ax.set_xlabel('Bins', ha='right', x=1, size=9)
           ax.set_ylabel('Train / Test',ha='right', y=1, size=9)
           ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
           ax.set_ylim(0.7, 1.3)
@@ -307,14 +349,85 @@ def train_test_ratio_plot(output_vbf_test = output_vbf, vbf_w_te = vbf_w, bins =
           print("Plotting Train and Test Ratio - Zoomed In")
      plt.close()
 
+#CONFUSION MATRIX
+def plot_confusion_matrix(cm,classes,normalize=False,title='Confusion matrix',cmap=plt.cm.Blues):
+    fig, ax = plt.subplots(1)
+    plt.imshow(cm,interpolation='nearest',cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks,classes,rotation=45)
+    plt.yticks(tick_marks,classes)
+    if normalize:
+        cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
+        for i in range(len(cm[0])):
+            for j in range(len(cm[1])):
+                cm[i][j] = float("{:.2f}".format(cm[i][j]))
+    thresh = cm.max()/2.
+    print(cm)
+    for i, j in product(range(cm.shape[0]),range(cm.shape[1])):
+        plt.text(j,i,cm[i,j],horizontalalignment='center',color='white' if cm[i,j]>thresh else 'black')
+        plt.tight_layout()
+        plt.ylabel('True Label')
+        plt.xlabel('Predicted label')
+    name = 'plotting/NN_plots/NN_Confusion_Matrix'
+    fig.savefig(name)
 
+#ACCURACY
+def plot_accuracy():
+    val_accuracy = history.history['val_acc']
+    accuracy = history.history['acc']
+    fig, ax = plt.subplots(1)
+    plt.plot(epochs,val_accuracy,label='Validation')
+    plt.plot(epochs,accuracy,label='Train')
+    plt.title('Model Accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.xticks(epochs)
+    plt.legend()
+    name = 'plotting/NN_plots/NN_Accuracy'
+    fig.savefig(name)
 
+#LOSS FUNCTION
+def plot_loss(name = 'plotting/NN_plots/NN_Loss'):
+    val_loss = history.history['val_loss']
+    loss = history.history['loss']
+    fig, ax = plt.subplots()
+    ax.plot(epochs,val_loss,label='Validation')
+    ax.plot(epochs,loss,label='Train')
+    #plt.title('Loss function')
+    ax.set_xlabel('Epoch', ha='right', x=1, size=9)
+    ax.set_ylabel('Loss',ha='right', y=1, size=9)
+    ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
+    ax.legend()
+    plt.savefig(name, dpi = 200)
+    print("Plotting Loss Function")
+    plt.close()
 
 # ----------------------------------------------------------------------
 # RUN
+# ----------------------------------------------------------------------
+
 plot_output_score()
 roc_score(train = True)
 train_test_ratio_plot(closeup = True)
+plot_accuracy()
+plot_loss()
+plot_confusion_matrix(cm,binNames,normalize=False)
+
+# -----------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
 
 '''
 
@@ -345,32 +458,3 @@ print(NNaccuracy)
 #print 'Successfully loaded the dataframe'
 '''
 
-
-
-# RANDOM STUFF THAT DIDNT WANT TO DELETE
-#model.compile(optimizer=Adam(learning_rate=0.001),loss='sparse_categorical_crossentropy',metrics=['accuracy'])
-#model.compile(optimizer=Adam,loss='sparse_categorical_crossentropy',metrics=['accuracy'])
-
-#model.fit(x=x_train_scaled,y=y_train_onehot,batch_size=400,epochs=3,shuffle=True,verbose=2)  # verbose = num of classes
-#print(model.summary())
-# commented them out for now until I finish the roc curve thing
-
-#The 61 columns are:
-#'Unnamed: 0', 'diphotonMass', 'diphotonPt', 'diphotonEta',
-#'diphotonPhi', 'diphotonCosPhi', 'diphotonSigmaMoM',
-#'leadPhotonIDMVA', 'leadPhotonPtOvM', 'leadPhotonEta',
-#'leadPhotonEn', 'leadPhotonMass', 'leadPhotonPt', 'leadPhotonPhi',
-#'subleadPhotonIDMVA', 'subleadPhotonPtOvM', 'subleadPhotonEta',
-#'subleadPhotonEn', 'subleadPhotonMass', 'subleadPhotonPt',
-#'subleadPhotonPhi', 'dijetMass', 'dijetPt', 'dijetEta', 'dijetPhi',
-#'dijetDPhi', 'dijetAbsDEta', 'dijetCentrality', 'dijetMinDRJetPho',
-#'dijetDiphoAbsDEta', 'leadJetPUJID', 'leadJetPt', 'leadJetEn',
-#'leadJetEta', 'leadJetPhi', 'leadJetMass', 'leadJetBTagScore',
-#'leadJetDiphoDEta', 'leadJetDiphoDPhi', 'subleadJetPUJID',
-#'subleadJetPt', 'subleadJetEn', 'subleadJetEta', 'subleadJetPhi',
-#'subleadJetMass', 'subleadJetBTagScore', 'subleadJetDiphoDPhi',
-#'subleadJetDiphoDEta', 'subsubleadJetPUJID', 'subsubleadJetPt',
-#'subsubleadJetEn', 'subsubleadJetEta', 'subsubleadJetPhi',
-#'subsubleadJetMass', 'subsubleadJetBTagScore', 'weight',
-#'centralObjectWeight', 'nSoftJets', 'genWeight', 'proc', 'year']
-#Need to remove: 'Unnamed: 0','weight','centralObjectWeight', 'genWeight', 'year'
