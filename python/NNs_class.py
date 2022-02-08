@@ -3,6 +3,7 @@ import argparse
 import pandas as pd
 import numpy as np
 import matplotlib
+import math
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import glob
@@ -27,11 +28,13 @@ from keras.models import Sequential
 from keras.initializers import RandomNormal
 from keras.layers import Dense
 from keras.layers import Activation
+from keras.layers import LeakyReLU
 from keras.layers import *
 from keras.optimizers import Nadam
 from keras.optimizers import adam
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
+from keras.callbacks import LearningRateScheduler
 from keras.utils import np_utils
 import h5py
 from keras.layers import Flatten
@@ -49,7 +52,7 @@ class NN_binary():
     type dataframe: pandas dataframe
 
     """
-    def __init__(self, dataframe, activation = 'relu', nodes = 100, lr = 0.001, test_split = 0.30, val_split = 0.10, batch_size = 400, num_epochs = 25):
+    def __init__(self, dataframe, activation = 'relu', nodes = 120, lr = 0.001, test_split = 0.30, val_split = 0.10, batch_size = 400, num_epochs = 10, num_layers = 1):
         self.data = dataframe
         self.activation = activation 
         self.num_inputs = 0
@@ -59,6 +62,7 @@ class NN_binary():
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.test_split = test_split
+        self.num_layers = num_layers
 
         self.output_vbf = 0
         self.output_ggh = 0
@@ -77,6 +81,13 @@ class NN_binary():
         #Shuffle dataframe
         data = data.sample(frac=1)
 
+        # re-grouping to ggH, qqH, VH leptonic and ttH
+        # this syntax: pandas.DataFrame.loc[condition, column_label] = new_value
+        """data.loc[data.HTXS_stage_0 == 10, 'proc_new'] = 'ggH'
+        data.loc[data.HTXS_stage_0 == 20 or data.HTXS_stage_0 == 22, 'proc_new'] = 'qqH'
+        data.loc[data.HTXS_stage_0 == 30 or data.HTXS_stage_0 == 40, 'proc_new'] = 'VH'
+        data.loc[data.HTXS_stage_0 == 60, 'proc_new'] = 'ttH'"""
+
         #Define the procs as the labels
         y_train_labels = np.array(data['proc'])
         y_train_labels_hot = np.where(y_train_labels=='VBF',1,0)
@@ -86,6 +97,8 @@ class NN_binary():
         #Remove proc and weight after shuffle
         data = data.drop(columns=['proc'])
         data = data.drop(columns=['weight']) 
+        data = data.drop(columns=['HTXS_stage_0'])
+        #data = data.drop(columns=['HTXS_stage1_2_cat_pTjet30GeV'])
 
         #Set -999.0 values to -10.0 to decrease effect on scaling 
         data = data.replace(-999.0,-10.0) 
@@ -112,12 +125,40 @@ class NN_binary():
         #Compile the model
         self.model.compile(optimizer=Adam(lr=self.lr),loss='binary_crossentropy',metrics=['accuracy'])
         self.model.summary()
+    
+    def model_fn_activ_analysis(self):
 
+        self.model=Sequential()
+        # beggining layer
+        self.model.add(Dense(units=self.nodes,input_shape=(self.num_inputs,),activation=self.activation))
+        # intermediate layers
+        for i in range(self.num_layers):
+            self.model.add(Dense(units=self.nodes,activation=self.activation))
+        # final layer
+        self.model.add(Dense(units=1,activation='sigmoid')) 
+        
+        #Compile the model
+        self.model.compile(optimizer=Adam(lr=self.lr),loss='binary_crossentropy',metrics=['accuracy'])
+        self.model.summary()
 
-    def training(self, data_scaled, y_train_labels_hot, weights, y_train_labels):
+    def scheduler(self, epoch, lr):
+        print("epoch: ", epoch)
+        if epoch < 10:
+            print("lr: ", self.lr)
+            return self.lr
+        else:
+            self.lr *= math.exp(-0.1)
+            print("lr: ", self.lr)
+            return self.lr
+
+    def training(self, data_scaled, y_train_labels_hot, weights, y_train_labels, layers_analysis_bool = False):
         x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data_scaled, y_train_labels_hot, weights, y_train_labels, test_size = self.test_split, shuffle=True)
-        print("x_test", x_test)
-        self.model_fn()  # compile the model
+        #print("x_test", x_test)
+        #if layers_analysis_bool == False:
+        #    self.model_fn()  # compile the model
+        #else:
+        #    self.model_fn_activ_analysis()
+        self.model_fn_activ_analysis()
 
         # Equalizing training weights
         train_w_df = pd.DataFrame()
@@ -130,12 +171,19 @@ class NN_binary():
         train_w = np.array(train_w_df['weight'])
 
         #Training the model
-        history = self.model.fit(x=x_train,y=y_train,batch_size=self.batch_size,epochs=self.num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
+        #history = self.model.fit(x=x_train,y=y_train,batch_size=self.batch_size,epochs=self.num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
+        #print("shape x_test ", x_test.shape)
+
+        callback_lr = LearningRateScheduler(self.scheduler)
+        callback_earlystop = EarlyStopping(monitor='val_loss', min_delta = 0.001, patience=10)
+        history = self.model.fit(x=x_train,y=y_train,batch_size=self.batch_size,epochs=self.num_epochs,sample_weight=train_w,shuffle=True,verbose=2, validation_split = self.val_split, callbacks=[callback_lr,callback_earlystop])
+        #round(self.model.optimizer.lr.np(), 5)
 
         return x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test
 
     
     def output_score(self, x_test, proc_arr_test, test_w):
+        #print("size x_test: ", x_test.shape)
         y_pred_test = self.model.predict_proba(x=x_test)  
         x_test['proc'] = proc_arr_test 
         x_test['weight'] = test_w 
@@ -156,6 +204,11 @@ class NN_binary():
         x_test_vbf = x_test_vbf.drop(columns=['output_score'])
         x_test_ggh = x_test_ggh.drop(columns=['output_score'])
 
+        x_test = x_test.drop(columns=['proc'])
+        x_test = x_test.drop(columns=['weight'])
+        x_test = x_test.drop(columns=['output_score'])
+        #print("size x_test: ", x_test.shape)
+
         #print("output_vbf_size ",len(output_vbf))
         #print("vbf_w size ", len(vbf_w))
         self.output_vbf = output_vbf
@@ -165,25 +218,35 @@ class NN_binary():
 
         self.plot_output_score()
     
-    def roc_curve(self, x_train, x_test, y_train, y_test, plot_roc = True):    
+    def roc_curve(self, x_train, x_test, y_train, y_test, train_w, test_w, plot_roc = True):    
         y_pred_test = self.model.predict_proba(x=x_test)    
         # testing
-        fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_test)
-        auc_keras_test = roc_auc_score(y_test, y_pred_test)
-        #np.savetxt('neural_networks/models/nn_roc_fpr.csv', fpr_keras, delimiter=',')
-        #np.savetxt('neural_networks/models/nn_roc_tpr.csv', tpr_keras, delimiter=',')
-        print("Area under ROC curve for testing: ", auc_keras_test)
+        fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred_test, sample_weight = test_w)
+        fpr_keras.sort()
+        tpr_keras.sort()
+        auc_test = auc(fpr_keras, tpr_keras)
+        #auc_keras_test = roc_auc_score(y_test, y_pred_test)
+        print("Area under ROC curve for testing: ", auc_test)
 
         # training
         y_pred_train = self.model.predict_proba(x = x_train)
-        fpr_keras_tr, tpr_keras_tr, thresholds_keras = roc_curve(y_train, y_pred_train)
-        auc_keras_train = roc_auc_score(y_train, y_pred_train)
-        print("Area under ROC curve for training: ", auc_keras_train)
+        fpr_keras_tr, tpr_keras_tr, thresholds_keras = roc_curve(y_train, y_pred_train, sample_weight = train_w)
+        fpr_keras_tr.sort()
+        tpr_keras_tr.sort()
+        auc_train = auc(fpr_keras_tr,tpr_keras_tr)
+        #auc_keras_train = roc_auc_score(y_train, y_pred_train, sample_weight = train_w)
+        print("Area under ROC curve for training: ", auc_train)
 
         if plot_roc:
             self.plot_roc_score(fpr_keras_tr, tpr_keras_tr, fpr_keras, tpr_keras, train = True)
+        
+        compare_with_bdt = False
+        if compare_with_bdt:
+            np.savetxt('neural_networks/models/y_test.csv', y_test, delimiter=',')
+            np.savetxt('neural_networks/models/y_pred_test.csv', y_pred_test, delimiter=',')
+            np.savetxt('neural_networks/models/test_w.csv', test_w, delimiter=',')
 
-        return auc_keras_test
+        return auc_test
 
     def plot_output_score(self, name='plotting/NN_plots/NN_Output_Score',signal_label='VBF',bkg_label='ggH',bins=50,density=False,histtype='step'):
         signal = self.output_vbf
@@ -228,9 +291,13 @@ class NN_binary():
 
         if output_score:
             self.output_score(x_test, proc_arr_test, test_w)
-        
+            x_test = x_test.drop(columns=['proc'])
+            x_test = x_test.drop(columns=['weight'])
+            x_test = x_test.drop(columns=['output_score'])
+
         if roc_curve_bool:
-            auc_test = self.roc_curve(x_train, x_test, y_train, y_test)
+            auc_test = self.roc_curve(x_train, x_test, y_train, y_test, train_w, test_w)
+            return auc_test
 
     def nodes_analysis(self, num_nodes = 10, increase_nodes = 10, nodes_analysis_plot = True):
 
@@ -251,15 +318,75 @@ class NN_binary():
 
         if nodes_analysis_plot:
             self.nodes_analysis_plot(auc_scores, nodes)
+    
+    def activation_analysis(self, activation_list, activation_analysis_plot = True):
+
+        auc_scores = []
+        activ_list = []
+
+        data_scaled, y_train_labels_hot, weights, y_train_labels = self.initialize()  # make the final dataframe
+        for i in range(len(activation_list)):
+            self.activation = activation_list[i]
+            x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = self.training(data_scaled, y_train_labels_hot, weights, y_train_labels) # train the model
+            auc_test = self.roc_curve(x_train, x_test, y_train, y_test, plot_roc = False)
+            auc_scores.append(auc_test)
+            activ_list.append(self.activation)
+            print("i ", i)
+
+        print("AUC scores: ", auc_scores)
+        print("Activation list: ", activ_list)
+
+        if activation_analysis_plot:
+            self.activation_analysis_plot(auc_scores, activ_list)
+    
+    def layers_analysis(self, num_intermediate_layers = 1, layers_analysis_plot = True):
+
+        auc_scores = []
+        num_int_layers = []
+
+        data_scaled, y_train_labels_hot, weights, y_train_labels = self.initialize()  # make the final dataframe
+        for i in range(num_intermediate_layers):   
+            self.num_layers = i
+            x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = self.training(data_scaled, y_train_labels_hot, weights, y_train_labels, layers_analysis_bool = True) # train the model
+            auc_test = self.roc_curve(x_train, x_test, y_train, y_test, plot_roc = False)
+            auc_scores.append(auc_test)
+            num_int_layers.append(self.num_layers)
+            print("i ", i)
+
+        print("AUC scores: ", auc_scores)
+        print("Number of intermediate layers: ", num_int_layers)
+
+        if layers_analysis_plot:
+            self.layers_analysis_plot(auc_scores, num_int_layers)
 
     def nodes_analysis_plot(self, auc_scores, nodes, name = 'plotting/NN_plots/NN_nodes_analysis'):
-        fig, ax = plt.figure()
+        fig, ax = plt.subplots()
         ax.plot(nodes, auc_scores, 'o')
         ax.set_xlabel('No of Nodes', ha='right', x=1, size=10)
         ax.set_ylabel('AUC score',ha='right', y=1, size=10)
         ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
         plt.savefig(name, dpi = 200)
         print("Plotting NN_nodes_analysis")
+        plt.close()
+
+    def activation_analysis_plot(self, auc_scores, activ_list, name = 'plotting/NN_plots/NN_activation_analysis'):
+        fig, ax = plt.subplots()
+        ax.plot(activ_list, auc_scores, 'o')
+        ax.set_xlabel('Intermediate Activation Types', ha='right', x=1, size=10)
+        ax.set_ylabel('AUC score',ha='right', y=1, size=10)
+        ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
+        plt.savefig(name, dpi = 200)
+        print("Plotting NN_activation_analysis")
+        plt.close()
+    
+    def layers_analysis_plot(self, auc_scores, num_int_layers, name = 'plotting/NN_plots/NN_layers_analysis'):
+        fig, ax = plt.subplots()
+        ax.plot(num_int_layers, auc_scores, 'o')
+        ax.set_xlabel('Number of intermediate layers', ha='right', x=1, size=10)
+        ax.set_ylabel('AUC score',ha='right', y=1, size=10)
+        ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
+        plt.savefig(name, dpi = 200)
+        print("Plotting NN_layers_analysis")
         plt.close()
         
 

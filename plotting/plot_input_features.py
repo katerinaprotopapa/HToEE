@@ -87,7 +87,8 @@ def main(options):
                     #'subsubleadTrkDz','subsubleadTrkPfRelIso03All',
                     #'subsubleadTrkPfRelIso03Chg','subsubleadTrkMiniPFRelIsoAll','subsubleadTrkMiniPFRelIsoChg','subsubleadTrkFromPV',
                     #'subsubleadTrkIsHighPurityTrack','subsubleadTrkIsPFcand','subsubleadTrkIsFromLostTrack','diphotonSigmaMoM','dijetDiphoAbsDPhiTrunc',
-                    'metPt','metPhi','metSumET' #,'metSignificance'#'PhotonIDSF','TriggerSF'
+                    'metPt','metPhi','metSumET', #,'metSignificance'#'PhotonIDSF','TriggerSF'
+                    #'HTXS_stage_0', 'HTXS_stage1_2_cat_pTjet30GeV'
                     ]
         for var in list_vars:
             plotter.plot_input(var, options.n_bins, output_tag, options.ratio_plot, norm_to_data=True)

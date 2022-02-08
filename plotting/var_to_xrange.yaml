@@ -91,4 +91,7 @@ var_to_xrange:
     'metPhi':                  [-3.,3,false]
     'diphotonSigmaMoM':        [-10,10, false]
 
+    'HTXS_stage_0':             [0,100, false]
+    'HTXS_stage1_2_cat_pTjet30GeV': [0,100,false]
+
 #Additional vars: metSumET,metPt,metPhi, jetCentrality, jetQGL

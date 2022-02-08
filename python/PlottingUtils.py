@@ -482,6 +482,7 @@ class Plotter(object):
 
         bkg_eff_test, sig_eff_test, _ = roc_curve(y_test, y_pred_test, sample_weight=test_weights)
 
+
  
 
         fig = plt.figure(1)
@@ -495,18 +496,24 @@ class Plotter(object):
             axes.plot(bkg_eff_test, sig_eff_test, label=label_name)
 
         else:
-            axes.plot(bkg_eff_train, sig_eff_train, color='red', label='Train')
+            #axes.plot(bkg_eff_train, sig_eff_train, color='red', label='Train')
 
-            axes.plot(bkg_eff_test, sig_eff_test, color='blue', label='Test')
+            auc_keras_test_BDT = roc_auc_score(y_test, y_pred_test)
+            axes.plot(bkg_eff_test, sig_eff_test, color='blue', label='BDT (area = %0.4f)'%auc_keras_test_BDT)
 
         if dijetcentrality_bool:
             dijet_vbf = np.loadtxt('models/ROC_curve_VBF.csv', delimiter=',')
             dijet_ggh = np.loadtxt('models/ROC_curve_ggH.csv', delimiter=',')
             axes.plot(dijet_ggh, dijet_vbf, color = 'green', label = 'Dijet Centrality')
-        if nn_roc:
-            fpr = np.loadtxt('neural_networks/models/nn_roc_fpr.csv', delimiter = ',')
-            tpr = np.loadtxt('neural_networks/models/nn_roc_tpr.csv', delimiter = ',')
-            axes.plot(fpr, tpr, color = 'green', label = 'Neural Network Test')
+        NN_roc = True
+        if NN_roc:
+            y_test_NN = np.loadtxt('neural_networks/models/y_test.csv', delimiter=',')
+            y_pred_NN = np.loadtxt('neural_networks/models/y_pred_test.csv', delimiter=',')
+            test_w_NN = np.loadtxt('neural_networks/models/test_w.csv', delimiter=',')
+            fpr_keras_NN, tpr_keras_NN, thresholds_keras_NN = roc_curve(y_test_NN, y_pred_NN, sample_weight = test_w_NN)
+            auc_keras_test_NN = roc_auc_score(y_test_NN, y_pred_NN)
+            axes.plot(fpr_keras_NN, tpr_keras_NN, color = 'green', label = 'NN (area = %0.4f)'%auc_keras_test_NN)
+
 
         axes.set_xlabel('Background efficiency', ha='right', x=1, size=13)
 

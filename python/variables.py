@@ -35,7 +35,7 @@ nominal_vars = ['diphotonPt','leadPhotonEta', 'subleadPhotonEta', 'leadPhotonIDM
                 #'subsubleadTrkPfRelIso03Chg','subsubleadTrkMiniPFRelIsoAll','subsubleadTrkMiniPFRelIsoChg','subsubleadTrkFromPV',
                 #'subsubleadTrkIsHighPurityTrack','subsubleadTrkIsPFcand','subsubleadTrkIsFromLostTrack',
                 #'diphotonSigmaMoM','dijetDiphoAbsDPhiTrunc',
-                'metPt','metPhi','metSumET' #,'metSignificance'
+                'metPt','metPhi','metSumET', #,'metSignificance'
                 # 'leadJetPt', 'subleadJetPt',
                 #'leadElectronEta', #'leadElectronEn', 'leadElectronPt', 'leadElectronPhi', 'leadElectronMass',
                 #'subleadElectronEta',#'subleadElectronPt', 'subleadElectronEn',  'subleadElectronPhi', 'subleadElectronMass',
@@ -50,6 +50,7 @@ nominal_vars = ['diphotonPt','leadPhotonEta', 'subleadPhotonEta', 'leadPhotonIDM
                 #'leadElectronCharge', 'subleadElectronCharge',
                 #'nSoftJets','metSumET','metPhi','metPt' , 'leadJetBTagScore', 'subleadJetBTagScore', 'subsubleadJetBTagScore',
                 #'leadJetPUJID','subleadJetPUJID', 'subsubleadJetPUJID'#,'leadJetID','subleadJetID','subsubleadJetID'
+                #'HTXS_stage_0', 'HTXS_stage1_2_cat_pTjet30GeV'
                ]
 
 #for MVA training, hence not including masses
@@ -58,5 +59,5 @@ gev_vars     = ['leadJetEn', 'leadJetPt', 'subleadJetEn', 'subleadJetPt', 'subsu
                 'leadElectronPToM', 'subleadElectronPToM', 'dijetMass', 'dielectronPt'
                ]
 
-gen_vars     = ['genWeight'] 
+gen_vars     = ['genWeight', 'HTXS_stage_0', 'HTXS_stage1_2_cat_pTjet30GeV'] 
 
