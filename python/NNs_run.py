@@ -85,9 +85,9 @@ data = df[train_vars]
 #exit(0)
 
 # Optimization - Grid approach
-nodes = [50, 120, 150, 200]
-layers = [1,2,4,10]
-learn_rate = [0.1, 0.01, 0.001, 0.0001]
+nodes = [50] #, 120, 150, 200]
+layers = [1] #,2,4,10]
+learn_rate = [0.1] #, 0.01, 0.001, 0.0001]
 activation_value = 'relu'
 #activation = ['relu', 'sigmoid', 'softmax']
 
@@ -104,11 +104,13 @@ for nodes_value in nodes:
                print('Parameter combination: ', nodes_value,layers_value,lr_value)
                print('AUC ROC score: ', auc_test)
 
-max_value = np.max(roc_values)
+max_value = [np.max(roc_values)]
 index_max_value = roc_values.index(max_value)
 best_param_comb = param_comb[index_max_value]
 print('Best parameter combination:',best_param_comb)
 print('Best ROC Score:',max_value)
+np.savetxt('neural_networks/models/best_param_combo.csv', best_param_comb, delimiter=',')
+np.savetxt('neural_networks/models/best_roc_score.txt', max_value, delimiter=',')
 
 
 
