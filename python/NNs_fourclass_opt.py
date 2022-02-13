@@ -48,10 +48,10 @@ plotDir  = 'neural_networks/plots/'
 train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
      'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
      'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
-     'leadPhotonEta', 'leadPhotonPtOvM', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi',
+     'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi',
      'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
      'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
-     'subleadPhotonEta', 'subleadPhotonPtOvM', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
+     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
      'subleadPhotonEn','subleadPhotonPt', 
      'subleadJetDiphoDPhi','subleadJetDiphoDEta',
      'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
@@ -59,7 +59,11 @@ train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','dip
      'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
      'subsubleadJetMass',
      'metPt','metPhi','metSumET',
-     'nSoftJets'
+     'nSoftJets',
+     'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
+     'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
+     'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
+     'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
      ]
 
 #Add proc and weight to shuffle with data
@@ -84,6 +88,7 @@ df = pd.concat(dataframes, sort=False, axis=0 )
 #dataframe of train_vars
 data = df[train_vars]
 
+exit(0)
 #Preselection cuts
 data = data[data.diphotonMass>100.]
 data = data[data.diphotonMass<180.]
@@ -229,8 +234,8 @@ index_max_value = acc_values.index(max_value)
 best_param_comb = param_comb[index_max_value]
 print('Best parameter combination:',best_param_comb)
 print('Best Acc Score:',max_value)
-np.savetxt('neural_networks/models/best_param_combo_nn_fourclass.txt', best_param_comb, delimiter=',')
-np.savetxt('neural_networks/models/best_acc_score_nn_fourclass.txt', max_value, delimiter=',')
+np.savetxt('neural_networks/models/best_param_combo_nn_fourclass_inscreen.txt', best_param_comb, delimiter=',')
+np.savetxt('neural_networks/models/best_acc_score_nn_fourclass_inscreen.txt', max_value, delimiter=',')
 
 
 

@@ -53,23 +53,26 @@ modelDir = 'neural_networks/models/'
 plotDir  = 'neural_networks/plots/'
 
 #Define the input features
-train_vars = ['diphotonMass', 'diphotonPt', 'diphotonEta',
-'diphotonPhi', 'diphotonCosPhi', 'diphotonSigmaMoM',
-'leadPhotonIDMVA', 'leadPhotonPtOvM', 'leadPhotonEta',
-'leadPhotonEn', 'leadPhotonMass', 'leadPhotonPt', 'leadPhotonPhi',
-'subleadPhotonIDMVA', 'subleadPhotonPtOvM', 'subleadPhotonEta',
-'subleadPhotonEn', 'subleadPhotonMass', 'subleadPhotonPt',
-'subleadPhotonPhi', 'dijetMass', 'dijetPt', 'dijetEta', 'dijetPhi',
-'dijetDPhi', 'dijetAbsDEta', 'dijetCentrality', 'dijetMinDRJetPho',
-'dijetDiphoAbsDEta', 'leadJetPUJID', 'leadJetPt', 'leadJetEn',
-'leadJetEta', 'leadJetPhi', 'leadJetMass', 'leadJetBTagScore',
-'leadJetDiphoDEta', 'leadJetDiphoDPhi', 'subleadJetPUJID',
-'subleadJetPt', 'subleadJetEn', 'subleadJetEta', 'subleadJetPhi',
-'subleadJetMass', 'subleadJetBTagScore', 'subleadJetDiphoDPhi',
-'subleadJetDiphoDEta', 'subsubleadJetPUJID', 'subsubleadJetPt',
-'subsubleadJetEn', 'subsubleadJetEta', 'subsubleadJetPhi',
-'subsubleadJetMass', 'subsubleadJetBTagScore','nSoftJets',
-'metPt','metPhi','metSumET']
+train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
+     'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
+     'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
+     'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi', 'leadPhotonPtOvM',
+     'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
+     'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
+     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
+     'subleadPhotonEn','subleadPhotonPt', 'subleadPhotonPtOvM',
+     'subleadJetDiphoDPhi','subleadJetDiphoDEta',
+     'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
+     'subleadJetEn','subleadJetEta','subleadJetPhi',
+     'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
+     'subsubleadJetMass',
+     'metPt','metPhi','metSumET',
+     'nSoftJets',
+     'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
+     'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
+     'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
+     'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
+     ]
 
 #Add proc and weight to shuffle with data
 train_vars.append('proc')
@@ -98,6 +101,8 @@ data = data[data.diphotonMass>100.]
 data = data[data.diphotonMass<180.]
 data = data[data.leadPhotonPtOvM>0.333]
 data = data[data.subleadPhotonPtOvM>0.25]
+#data = data[data.subleadElectronMass>-2]
+exit(0)
 
 proc_temp = np.array(data['HTXS_stage_0'])
 proc_new = []
@@ -350,19 +355,19 @@ def roc_score(y_true = y_true, y_pred = y_pred_test):
     auc_keras_test_ggh = auc(fpr_keras_ggh,tpr_keras_ggh)
     print("Area under ROC curve for ggH (test): ", auc_keras_test_ggh)
 
-    fpr_keras_qqh, tpr_keras_qqh, thresholds_keras_qqh = roc_curve(y_true_qqh, y_pred_qqh_prob,,sample_weight=qqh_w)
+    fpr_keras_qqh, tpr_keras_qqh, thresholds_keras_qqh = roc_curve(y_true_qqh, y_pred_qqh_prob,sample_weight=qqh_w)
     fpr_keras_qqh.sort()
     tpr_keras_qqh.sort()
     auc_keras_test_qqh = auc(fpr_keras_qqh,tpr_keras_qqh)
     print("Area under ROC curve for qqH (test): ", auc_keras_test_qqh)
 
-    fpr_keras_vh, tpr_keras_vh, thresholds_keras_vh = roc_curve(y_true_vh, y_pred_vh_prob,,sample_weight=vh_w)
+    fpr_keras_vh, tpr_keras_vh, thresholds_keras_vh = roc_curve(y_true_vh, y_pred_vh_prob,sample_weight=vh_w)
     fpr_keras_vh.sort()
     tpr_keras_vh.sort()
     auc_keras_test_vh = auc(fpr_keras_vh,tpr_keras_vh)
     print("Area under ROC curve for VH (test): ", auc_keras_test_vh)
 
-    fpr_keras_tth, tpr_keras_tth, thresholds_keras_tth = roc_curve(y_true_tth, y_pred_tth_prob,,sample_weight=tth_w)
+    fpr_keras_tth, tpr_keras_tth, thresholds_keras_tth = roc_curve(y_true_tth, y_pred_tth_prob,sample_weight=tth_w)
     fpr_keras_tth.sort()
     tpr_keras_tth.sort()
     auc_keras_test_tth = auc(fpr_keras_tth,tpr_keras_tth)

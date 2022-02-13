@@ -89,6 +89,10 @@ def main(options):
                     #'subsubleadTrkIsHighPurityTrack','subsubleadTrkIsPFcand','subsubleadTrkIsFromLostTrack','diphotonSigmaMoM','dijetDiphoAbsDPhiTrunc',
                     'metPt','metPhi','metSumET', #,'metSignificance'#'PhotonIDSF','TriggerSF'
                     #'HTXS_stage_0', 'HTXS_stage1_2_cat_pTjet30GeV'
+                    'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
+                    'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
+                    'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
+                    'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
                     ]
         for var in list_vars:
             plotter.plot_input(var, options.n_bins, output_tag, options.ratio_plot, norm_to_data=True)

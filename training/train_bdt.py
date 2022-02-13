@@ -38,10 +38,11 @@ def main(options):
 
         for sig_obj in root_obj.sig_objects:
             root_obj.load_mc(sig_obj, reload_samples=options.reload_samples)
-        for bkg_obj in root_obj.bkg_objects:
-            root_obj.load_mc(bkg_obj, bkg=True, reload_samples=options.reload_samples)
-        for data_obj in root_obj.data_objects:
-            root_obj.load_data(data_obj, reload_samples=options.reload_samples)
+        # change    
+        #for bkg_obj in root_obj.bkg_objects:
+        #    root_obj.load_mc(bkg_obj, bkg=True, reload_samples=options.reload_samples)
+        #for data_obj in root_obj.data_objects:
+        #    root_obj.load_data(data_obj, reload_samples=options.reload_samples)
         root_obj.concat() 
 
         #reweight samples in bins of pT (and maybe Njets), for each year separely. Note targetted selection

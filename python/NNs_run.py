@@ -6,17 +6,17 @@ from NNs_class import NN_binary
 
 #Define key quantities, use to tune NN
 num_epochs = 50
-nodes = 120
+nodes = 400
 batch_size = 64
 test_split = 0.15
 val_split = 0.10
-learning_rate = 0.001 #0.001
+learning_rate = 0.0001 #0.001
 activation = 'relu'
 num_int_layers = 1
 
 # For HP analysis
-activation_list = ['relu', 'sigmoid', 'softmax', 'tanh', 'selu', 'elu']
-num_intermediate_layers = 7
+#activation_list = ['relu', 'sigmoid', 'softmax', 'tanh', 'selu', 'elu']
+#num_intermediate_layers = 7
 
 epochs = np.linspace(1,num_epochs,num_epochs,endpoint=True).astype(int) #For plotting
 binNames = ['ggH','VBF'] 
@@ -44,18 +44,22 @@ plotDir  = 'neural_networks/plots/'
 train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
      'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
      'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
-     'leadPhotonEta', 'leadPhotonPtOvM', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi',
+     'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi', 'leadPhotonPtOvM',
      'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
      'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
-     'subleadPhotonEta', 'subleadPhotonPtOvM', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
-     'subleadPhotonEn','subleadPhotonPt', 
+     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
+     'subleadPhotonEn','subleadPhotonPt', 'subleadPhotonPtOvM',
      'subleadJetDiphoDPhi','subleadJetDiphoDEta',
      'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
      'subleadJetEn','subleadJetEta','subleadJetPhi',
      'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
      'subsubleadJetMass',
      'metPt','metPhi','metSumET',
-     'nSoftJets'
+     'nSoftJets',
+     'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
+     'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
+     'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
+     'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
      ]
 
 #Add proc and weight to shuffle with data 
@@ -73,21 +77,22 @@ df = pd.concat(dataframes, sort=False, axis=0 )
 #dataframe of train_vars
 data = df[train_vars]
 
+exit(0)
 # call the class
-#class_NN = NN_binary(data, nodes = nodes, lr = learning_rate, test_split = test_split, val_split = val_split, batch_size = batch_size, activation = activation, num_layers = num_int_layers, num_epochs = num_epochs)   
-#auc_test = class_NN.run(output_score = True, roc_curve_bool = True)
+class_NN = NN_binary(data, nodes = nodes, lr = learning_rate, test_split = test_split, val_split = val_split, batch_size = batch_size, activation = activation, num_layers = num_int_layers, num_epochs = num_epochs)   
+auc_test = class_NN.run(output_score = True, roc_curve_bool = True)
 
 # optimization analysis
 #class_NN.nodes_analysis(num_nodes = 10, increase_nodes = 5)
 #class_NN.activation_analysis(activation_list)
 #class_NN.layers_analysis(num_intermediate_layers)
 
-#exit(0)
+exit(0)
 
 # Optimization - Grid approach
-nodes = [50] #, 120, 150, 200]
-layers = [1] #,2,4,10]
-learn_rate = [0.1] #, 0.01, 0.001, 0.0001]
+nodes = [100, 200, 300]
+layers = [1,5,10]
+learn_rate = [0.01, 0.001, 0.0001]
 activation_value = 'relu'
 #activation = ['relu', 'sigmoid', 'softmax']
 
@@ -109,8 +114,8 @@ index_max_value = roc_values.index(max_value)
 best_param_comb = param_comb[index_max_value]
 print('Best parameter combination:',best_param_comb)
 print('Best ROC Score:',max_value)
-np.savetxt('neural_networks/models/best_param_combo.csv', best_param_comb, delimiter=',')
-np.savetxt('neural_networks/models/best_roc_score.txt', max_value, delimiter=',')
+np.savetxt('neural_networks/models/best_param_combo_inscreen.csv', best_param_comb, delimiter=',')
+np.savetxt('neural_networks/models/best_roc_score_inscreen.txt', max_value, delimiter=',')
 
 
 

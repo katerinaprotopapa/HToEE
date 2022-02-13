@@ -76,14 +76,14 @@ class ROOTHelpers(object):
         self.years              = set()
         self.lumi_map           = {'2016':35.9, '2017':41.5, '2018':59.7}
         self.lumi_scale         = True
-        self.XS_map             = {'ggH':48.58*0.00227, 'VH':2.257*0.00227, 'VBF':3.782*0.00227, 'ttH':0.5071*0.00272, 'Gjet20to40':2.320E2, 'Gjet20toInf':3.147E3, 'Gjet40toInf':8.633E2, 'Diphoton40to80':3.119E2, 'Diphoton80toInf':8.764E1, 'QCD30to40':24810, 'QCD30toInf':241400, 'QCD40toInf':118100} #all in pb. also have BR for signals
+        self.XS_map             = {'ggH':48.58*0.00227, 'VH':2.257*0.00227, 'VBF':3.782*0.00227, 'ttH':0.5071*0.00272, 'tHq':0.07713*0.00227, 'tHW':0.01517*0.00227, 'Gjet20to40':2.320E2, 'Gjet20toInf':3.147E3, 'Gjet40toInf':8.633E2, 'Diphoton40to80':3.119E2, 'Diphoton80toInf':8.764E1, 'QCD30to40':24810, 'QCD30toInf':241400, 'QCD40toInf':118100} #all in pb. also have BR for signals
         #self.eff_acc            = {'2016':{'ggH':0.4092322, 'VBF':0.4199965,'ggH_Hgg':0.0003087, 'VBF_Hgg':0.0003262, 'DYMC':0.0629857, 'TT2L2Nu':0.0182418, 'TTSemiL':0.0000808, 'EWKZ':0.1539223, 'EWKZlowmass':0.0921958}, #Pass15 from dumper, year dependent. update if selec changes. Some 2018 samples missing so used 2017 replacements
         #                           '2017':{'ggH':0.4092322, 'VBF':0.4199965,'ggH_Hgg':0.0003087, 'VBF_Hgg':0.0003262, 'DYMC':0.0688259, 'TT2L2Nu':0.0192809, 'TTSemiL':0.0001087, 'EWKZ':0.1682972, 'EWKZlowmass':0.1023668},
         #                           '2018':{'ggH':0.4092322, 'VBF':0.4199965,'ggH_Hgg':0.0003087, 'VBF_Hgg':0.0003262, 'DYMC':0.0688259, 'TT2L2Nu':0.0194741, 'TTSemiL':0.0001060, 'EWKZ':0.1622357, 'EWKZlowmass':0.0991182}
         #                          }     
 
         self.eff_acc            = {#'2016':{'ggH':0.4092322, 'VBF':0.4199965,'ggH_Hgg':0.0003087, 'VBF_Hgg':0.0003262, 'DYMC':0.0629882, 'TT2L2Nu':0.0182469, 'TTSemiL':0.0000808, 'EWKZ':0.1539223, 'EWKZlowmass':0.0921958}, #Pass16
-                                   '2017':{'VH':0.4789266, 'ttH':0.5821746, 'ggH':0.5259538, 'VBF':0.5339179, 'Diphoton40to80':0.0009297, 'Diphoton80toInf':0.1732172, 'Gjet20toInf':0.0004272, 'Gjet40toInf':0.0425448, 'Gjet20to40':0.0188552, 'QCD30to40':0.0003714, 'QCD30toInf':0.0000336, 'QCD40toInf':0.0007673},
+                                   '2017':{'VH':0.4789266, 'ttH':0.5821746, 'ggH':0.5259538, 'VBF':0.5339179, 'tHq': 0.5795102, 'tHW': 0.5910044, 'Diphoton40to80':0.0009297, 'Diphoton80toInf':0.1732172, 'Gjet20toInf':0.0004272, 'Gjet40toInf':0.0425448, 'Gjet20to40':0.0188552, 'QCD30to40':0.0003714, 'QCD30toInf':0.0000336, 'QCD40toInf':0.0007673},
                                    #'2018':{'ggH':0.4092322, 'VBF':0.4199965,'ggH_Hgg':0.0003087, 'VBF_Hgg':0.0003262, 'DYMC':0.0688215, 'TT2L2Nu':0.0194739, 'TTSemiL':0.0001059, 'EWKZ':0.1622357, 'EWKZlowmass':0.0991182}
                                   }     
 
@@ -111,12 +111,12 @@ class ROOTHelpers(object):
                 if read_systs: final_mc_vars = self.add_year_dep_systs(core_vars, year)
                 else: final_mc_vars = core_vars
                 self.sig_objects.append( SampleObject(proc, year, file_name, proc_to_tree_name[proc], vars_to_read=final_mc_vars) )
- 
+            
  #Making changes here
-        self.bkg_procs          = []
-        self.bkg_objects        = []
-        for proc, year_to_file in mc_fnames['bkg'].items():
-            if proc not in self.bkg_procs: self.bkg_procs.append(proc) 
+      #  self.bkg_procs          = []
+      #  self.bkg_objects        = []
+      #  for proc, year_to_file in mc_fnames['bkg'].items():
+      #      if proc not in self.bkg_procs: self.bkg_procs.append(proc) 
                 #if 'QCD' in proc:
 
                 #elif 'Diphoton' in proc:
@@ -126,15 +126,15 @@ class ROOTHelpers(object):
 
                 
             # if proc
-            else: raise IOError('Multiple versions of same background proc trying to be read')
-            for year, file_name in year_to_file.iteritems():
-                if year not in self.years:  raise IOError('Incompatible sample years')
-                self.years.add(year)
-                if read_systs: final_mc_vars = self.add_year_dep_systs(core_vars, year)
-                else: final_mc_vars = core_vars
-                self.bkg_objects.append( SampleObject(proc, year, file_name, proc_to_tree_name[proc], vars_to_read=final_mc_vars) )
+     #       else: raise IOError('Multiple versions of same background proc trying to be read')
+     #       for year, file_name in year_to_file.iteritems():
+     #           if year not in self.years:  raise IOError('Incompatible sample years')
+     #           self.years.add(year)
+     #           if read_systs: final_mc_vars = self.add_year_dep_systs(core_vars, year)
+     #           else: final_mc_vars = core_vars
+     #           self.bkg_objects.append( SampleObject(proc, year, file_name, proc_to_tree_name[proc], vars_to_read=final_mc_vars) )
 #End of changes
-
+            
         #self.bkg_procs          = []
         #self.bkg_objects        = []
         #for proc, year_to_file in mc_fnames['bkg'].items():
@@ -148,16 +148,17 @@ class ROOTHelpers(object):
         #        else: final_mc_vars = core_vars
         #        self.bkg_objects.append( SampleObject(proc, year, file_name, proc_to_tree_name[proc], vars_to_read=final_mc_vars) )
 
-        self.data_objects       = []
-        for proc, year_to_file in data_fnames.items():
-            for year, file_name in year_to_file.iteritems():
-                if year not in self.years:  raise IOError('Incompatible sample years')
-                self.years.add(year)
-                self.data_objects.append( SampleObject(proc, year, file_name, proc_to_tree_name[proc], vars_to_read=data_vars) )
+        # Change again
+        #self.data_objects       = []
+        #for proc, year_to_file in data_fnames.items():
+        #    for year, file_name in year_to_file.iteritems():
+        #        if year not in self.years:  raise IOError('Incompatible sample years')
+        #        self.years.add(year)
+        #        self.data_objects.append( SampleObject(proc, year, file_name, proc_to_tree_name[proc], vars_to_read=data_vars) )
 
         self.mc_df_sig          = []
-        self.mc_df_bkg          = []
-        self.data_df            = []
+        #self.mc_df_bkg          = []
+        #self.data_df            = []
 
     def add_year_dep_systs(self, core_vars, year):
         """
@@ -416,13 +417,14 @@ class ROOTHelpers(object):
         elif len(self.mc_df_sig) == 0: pass
         else: self.mc_df_sig = pd.concat(self.mc_df_sig)
 
-        if len(self.mc_df_bkg) == 1: self.mc_df_bkg = self.mc_df_bkg[0] 
-        elif len(self.mc_df_bkg) == 0: pass
-        else: self.mc_df_bkg = pd.concat(self.mc_df_bkg)
+        # Change
+        #if len(self.mc_df_bkg) == 1: self.mc_df_bkg = self.mc_df_bkg[0] 
+        #elif len(self.mc_df_bkg) == 0: pass
+        #else: self.mc_df_bkg = pd.concat(self.mc_df_bkg)
 
-        if len(self.data_df) == 1: self.data_df = self.data_df[0] 
-        elif len(self.data_df) == 0 : pass
-        else: self.data_df = pd.concat(self.data_df)
+        #if len(self.data_df) == 1: self.data_df = self.data_df[0] 
+        #elif len(self.data_df) == 0 : pass
+        #else: self.data_df = pd.concat(self.data_df)
    
     def apply_pt_rew(self, bkg_proc, presel, norm=True):
         """
