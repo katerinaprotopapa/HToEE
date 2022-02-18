@@ -15,7 +15,7 @@ from root_numpy import tree2array, fill_hist
 from math import pi
 import h5py
 from itertools import product
-from sklearn.metrics import accuracy_score, log_loss, confusion_matrix, roc_curve, auc, roc_auc_score, auc
+from sklearn.metrics import accuracy_score, log_loss, confusion_matrix, roc_curve, auc, roc_auc_score
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential 

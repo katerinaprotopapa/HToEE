@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 import pickle
 from itertools import product
 from keras.utils import np_utils 
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score, auc
 
 #Define key quantities, use to tune BDT
 num_estimators = 300
@@ -20,22 +20,26 @@ learning_rate = 0.001
 binNames = ['ggH','qqH','VH','ttH'] 
 bins = 50
 
-train_vars = ['diphotonMass', 'diphotonPt', 'diphotonEta',
-'diphotonPhi', 'diphotonCosPhi', 'diphotonSigmaMoM',
-'leadPhotonIDMVA', 'leadPhotonPtOvM', 'leadPhotonEta',
-'leadPhotonEn', 'leadPhotonMass', 'leadPhotonPt', 'leadPhotonPhi',
-'subleadPhotonIDMVA', 'subleadPhotonPtOvM', 'subleadPhotonEta',
-'subleadPhotonEn', 'subleadPhotonMass', 'subleadPhotonPt',
-'subleadPhotonPhi', 'dijetMass', 'dijetPt', 'dijetEta', 'dijetPhi',
-'dijetDPhi', 'dijetAbsDEta', 'dijetCentrality', 'dijetMinDRJetPho',
-'dijetDiphoAbsDEta', 'leadJetPUJID', 'leadJetPt', 'leadJetEn',
-'leadJetEta', 'leadJetPhi', 'leadJetMass', 'leadJetBTagScore',
-'leadJetDiphoDEta', 'leadJetDiphoDPhi', 'subleadJetPUJID',
-'subleadJetPt', 'subleadJetEn', 'subleadJetEta', 'subleadJetPhi',
-'subleadJetMass', 'subleadJetBTagScore', 'subleadJetDiphoDPhi',
-'subleadJetDiphoDEta', 'subsubleadJetPUJID', 'subsubleadJetPt',
-'subsubleadJetEn', 'subsubleadJetEta', 'subsubleadJetPhi',
-'subsubleadJetMass', 'subsubleadJetBTagScore','nSoftJets','metPt','metPhi','metSumET']
+train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
+     'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
+     'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
+     'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi', 'leadPhotonPtOvM',
+     'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
+     'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
+     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
+     'subleadPhotonEn','subleadPhotonPt', 'subleadPhotonPtOvM',
+     'subleadJetDiphoDPhi','subleadJetDiphoDEta',
+     'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
+     'subleadJetEn','subleadJetEta','subleadJetPhi',
+     'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
+     'subsubleadJetMass',
+     'metPt','metPhi','metSumET',
+     'nSoftJets',
+     'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
+     'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
+     'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
+     'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
+     ]
 
 train_vars.append('proc')
 train_vars.append('weight')
@@ -133,7 +137,7 @@ clf = clf.fit(x_train, y_train, sample_weight=train_w)
 print ('Finished Training classifier!')
 
 #print('Saving Classifier...')
-#pickle.dump(clf, open("models/Multi_BDT_clf.pickle.dat"))
+#pickle.dump(clf, open("models/Multi_BDT_clf.pickle.dat", "wb"))
 #print('Finished Saving classifier!')
 
 #print('loading classifier:')
@@ -162,6 +166,8 @@ ggh_w = x_test_ggh['weight'] / x_test_ggh['weight'].sum()
 qqh_w = x_test_qqh['weight'] / x_test_qqh['weight'].sum()
 vh_w = x_test_vh['weight'] / x_test_vh['weight'].sum()
 tth_w = x_test_tth['weight'] / x_test_tth['weight'].sum()
+
+total_w = x_test['weight'] / x_test['weight'].sum()
 
 #Accuracy Score
 y_pred = y_pred_test.argmax(axis=1)
@@ -211,25 +217,25 @@ for i in range(len(y_pred_tth)):
 #Plotting:
 def roc_score(y_true = y_true, y_pred = y_pred_test):
 
-    fpr_keras_ggh, tpr_keras_ggh, thresholds_keras_ggh = roc_curve(y_true_ggh, y_pred_ggh_prob,sample_weight=ggh_w)
+    fpr_keras_ggh, tpr_keras_ggh, thresholds_keras_ggh = roc_curve(y_true_ggh, y_pred_ggh_prob,sample_weight=total_w)
     fpr_keras_ggh.sort()
     tpr_keras_ggh.sort()
     auc_keras_test_ggh = auc(fpr_keras_ggh,tpr_keras_ggh)
     print("Area under ROC curve for ggH (test): ", auc_keras_test_ggh)
 
-    fpr_keras_qqh, tpr_keras_qqh, thresholds_keras_qqh = roc_curve(y_true_qqh, y_pred_qqh_prob,,sample_weight=qqh_w)
+    fpr_keras_qqh, tpr_keras_qqh, thresholds_keras_qqh = roc_curve(y_true_qqh, y_pred_qqh_prob,sample_weight=total_w)
     fpr_keras_qqh.sort()
     tpr_keras_qqh.sort()
     auc_keras_test_qqh = auc(fpr_keras_qqh,tpr_keras_qqh)
     print("Area under ROC curve for qqH (test): ", auc_keras_test_qqh)
 
-    fpr_keras_vh, tpr_keras_vh, thresholds_keras_vh = roc_curve(y_true_vh, y_pred_vh_prob,,sample_weight=vh_w)
+    fpr_keras_vh, tpr_keras_vh, thresholds_keras_vh = roc_curve(y_true_vh, y_pred_vh_prob,sample_weight=total_w)
     fpr_keras_vh.sort()
     tpr_keras_vh.sort()
     auc_keras_test_vh = auc(fpr_keras_vh,tpr_keras_vh)
     print("Area under ROC curve for VH (test): ", auc_keras_test_vh)
 
-    fpr_keras_tth, tpr_keras_tth, thresholds_keras_tth = roc_curve(y_true_tth, y_pred_tth_prob,,sample_weight=tth_w)
+    fpr_keras_tth, tpr_keras_tth, thresholds_keras_tth = roc_curve(y_true_tth, y_pred_tth_prob,sample_weight=total_w)
     fpr_keras_tth.sort()
     tpr_keras_tth.sort()
     auc_keras_test_tth = auc(fpr_keras_tth,tpr_keras_tth)
@@ -294,10 +300,29 @@ def plot_output_score(data='output_score_qqh', density=False,):
     name = 'plotting/BDT_plots/BDT_Multi_'+data
     plt.savefig(name, dpi = 200)
 
+
+# Feature Importance
+
+def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values = False):
+    if num_plots == 'single':
+        plt.rcParams["figure.figsize"] = (14,7)
+        xgb.plot_importance(clf, max_num_features=num_feature, grid = False, height = 0.4, importance_type = imp_type, title = 'Feature importance ({})'.format(imp_type), show_values = values, color ='blue')
+        plt.savefig('plotting/BDT_plots/feature_importance_{0}.png'.format(imp_type), dpi = 200)
+        print('saving: /plotting/BDT_plots/feature_importance_{0}.png'.format(imp_type))
+        
+    else:
+        imp_types = ['weight','gain','cover']
+        for i in imp_types:
+            xgb.plot_importance(clf, max_num_features=num_feature, grid = False, height = 0.4, importance_type = imp_type, title = 'Feature importance ({})'.format(i), show_values = values, color ='blue')
+            plt.savefig('/plotting/BDT_plots/feature_importance_{0}.png'.format(i), dpi = 200)
+            print('saving: /plotting/BDT_plots/feature_importance_{0}.png'.format(i))
+
 plot_output_score(data='output_score_qqh')
 plot_output_score(data='output_score_ggh')
 plot_output_score(data='output_score_vh')
 plot_output_score(data='output_score_tth')
+
+feature_importance()
 
 roc_score()
 

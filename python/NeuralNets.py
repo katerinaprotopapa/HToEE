@@ -579,7 +579,7 @@ class LSTM_DNN(object):
         """
 
         print("X_train_high_level: ", self.X_train_high_level.shape)
-        print("X_train_low_level: ", self.X_train_low_level.shape) # Kat - this should be 3D instead of 2D?
+        print("X_train_low_level: ", self.X_train_low_level.shape) 
         if self.eq_train: self.model.fit([self.X_train_high_level, self.X_train_low_level], self.y_train, epochs=epochs, batch_size=batch_size, sample_weight=self.train_weights_eq)       
         else: self.model.fit([self.X_train_high_level, self.X_train_low_level], self.y_train, epochs=epochs, batch_size=batch_size, sample_weight=self.train_weights)       
     
@@ -600,7 +600,7 @@ class LSTM_DNN(object):
             self.model.save_weights('{}/models/{}_model_epoch_{}.hdf5'.format(os.getcwd(), out_tag, epoch))
             with open("{}/models/{}_model_architecture_epoch_{}.json".format(os.getcwd(), out_tag, epoch), "w") as f_out:
                 f_out.write(self.model.to_json())
-        else: 
+        else:  
             self.model.save_weights('{}/models/{}_model.hdf5'.format(os.getcwd(), out_tag))
             with open("{}/models/{}_model_architecture.json".format(os.getcwd(), out_tag), "w") as f_out:
                 f_out.write(self.model.to_json())
