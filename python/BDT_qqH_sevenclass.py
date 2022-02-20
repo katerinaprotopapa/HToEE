@@ -92,6 +92,82 @@ df = pd.concat(dataframes, sort=False, axis=0 )
 
 data = df[train_vars]
 
+# pTHjj and njets variable construction
+# my soul has exited my body since I have tried every possible pandas way to do this ... I will turn to numpy arrays now for my own sanity
+# most inefficient code ever written lessgoooo
+
+leadJetPt = np.array(data['leadJetPt'])
+leadJetPhi = np.array(data['leadJetPhi'])
+subleadJetPt = np.array(data['subleadJetPt'])
+subleadJetPhi = np.array(data['subleadJetPhi'])
+leadPhotonPt = np.array(data['leadPhotonPt'])
+leadPhotonPhi = np.array(data['leadPhotonPhi'])
+subleadPhotonPt = np.array(data['subleadPhotonPt'])
+subleadPhotonPhi = np.array(data['subleadPhotonPhi'])
+
+# creating pTHjj variable
+pTHjj = []
+check = 0
+for i in range(data.shape[0]):
+    if leadJetPt[i] != -999.0 or leadJetPhi[i] != -999.0:
+        px_jet1 = leadJetPt[i]*np.cos(leadJetPhi[i])
+        py_jet1 = leadJetPt[i]*np.sin(leadJetPhi[i])
+    else:
+        px_jet1 = 0
+        py_jet1 = 0
+        check += 1
+    if subleadJetPt[i] != -999.0 or subleadJetPhi[i] != -999.0:
+        px_jet2 = subleadJetPt[i]*np.cos(subleadJetPhi[i])
+        py_jet2 = subleadJetPt[i]*np.sin(subleadJetPhi[i])
+    else:
+        px_jet2 = 0
+        py_jet2 = 0
+        check += 1
+    if leadPhotonPt[i] != -999.0 or leadPhotonPhi[i] != -999.0:
+        px_ph1 = leadPhotonPt[i]*np.cos(leadPhotonPhi[i])
+        py_ph1 = leadPhotonPt[i]*np.sin(leadPhotonPhi[i])
+    else:
+        px_ph1 = 0
+        py_ph1 = 0
+        check += 1
+    if subleadPhotonPt[i] != -999.0 or subleadPhotonPhi[i] != -999.0:
+        px_ph2 = subleadPhotonPt[i]*np.cos(subleadPhotonPhi[i])
+        py_ph2 = subleadPhotonPt[i]*np.sin(subleadPhotonPhi[i])
+    else:
+        px_ph2 = 0
+        py_ph2 = 0
+        check += 1 
+
+    px_sum = px_jet1 + px_jet2 + px_ph1 + px_ph2
+    py_sum = py_jet1 + py_jet2 + py_ph1 + py_ph2
+
+    if check == 4:
+        pTHjj.append(-999.0)
+    else:
+        pTHjj.append(np.sqrt(px_sum**2 + py_sum**2))    
+    check = 0
+
+data['pTHjj'] = pTHjj
+
+# creating n-jets variable
+njets = []
+num_jet = 0
+for i in range(data.shape[0]):
+    if leadJetPt[i] != -999.0:
+        if subleadJetPt[i] != -999.0:
+            num_jet = 2
+        else:
+            num_jet = 1
+    else:
+        num_jet = 0
+    njets.append(num_jet)
+data['njets'] = njets
+
+print('New Variables')
+print('pTHjj: ', data['pTHjj'])
+print('njets: ', data['njets'])
+
+
 data = data[data.diphotonMass>100.]
 data = data[data.diphotonMass<180.]
 data = data[data.leadPhotonPtOvM>0.333]
@@ -157,7 +233,7 @@ x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test
 
 #Before n_estimators = 100, maxdepth=4, gamma = 1
 #Improved n_estimators = 300, maxdepth = 7, gamme = 4
-clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=1, 
+clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=100, 
                             eta=0.1, maxDepth=6, min_child_weight=0.01, 
                             subsample=0.6, colsample_bytree=0.6, gamma=4,
                             num_class=4)

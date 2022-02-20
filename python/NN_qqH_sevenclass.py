@@ -24,6 +24,7 @@ from keras.layers import Dense, Activation, Flatten
 from keras.optimizers import Nadam, adam, Adam
 from keras.regularizers import l2 
 from keras.callbacks import EarlyStopping 
+from keras.callbacks import LearningRateScheduler
 from keras.utils import np_utils 
 from keras.metrics import categorical_crossentropy, binary_crossentropy
 
@@ -37,9 +38,10 @@ from keras.metrics import categorical_crossentropy, binary_crossentropy
 #learning_rate = 0.001
 
 #Optimized according to 4class
-num_epochs = 1
+num_epochs = 50
 batch_size = 64
-val_split = 0.3
+test_split = 0.2
+val_split = 0.1
 learning_rate = 0.0001
 
 
@@ -132,7 +134,7 @@ df = pd.concat(dataframes, sort=False, axis=0 )
 data = df[train_vars]
 print 'we are here'
 
-"""
+
 # pTHjj and njets variable construction
 # my soul has exited my body since I have tried every possible pandas way to do this ... I will turn to numpy arrays now for my own sanity
 # most inefficient code ever written lessgoooo
@@ -206,7 +208,7 @@ data['njets'] = njets
 
 print('New Variables')
 print('pTHjj: ', data['pTHjj'])
-print('njets: ', data['njets'])"""
+print('njets: ', data['njets'])
 
 
 #Preselection cuts
@@ -283,7 +285,7 @@ data_scaled = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 num_inputs  = data_scaled.shape[1]
 
 #Splitting the dataframe into training and test
-x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data_scaled, y_train_labels_hot, weights, y_train_labels, test_size = val_split, shuffle = True)
+x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data_scaled, y_train_labels_hot, weights, y_train_labels, test_size = test_split, shuffle = True)
 
 #Initialize the model
 model=Sequential([Dense(units=400,input_shape=(num_inputs,),activation='relu'),
@@ -295,6 +297,19 @@ model=Sequential([Dense(units=400,input_shape=(num_inputs,),activation='relu'),
 model.compile(optimizer=Adam(lr=learning_rate),loss='categorical_crossentropy',metrics=['accuracy'])
 
 model.summary()
+
+# callbacks
+def scheduler(epoch, lr):
+    print("epoch: ", epoch)
+    if epoch < 10:
+        print("lr: ", lr)
+        return lr
+    else:
+        lr *= math.exp(-0.1)
+        print("lr: ", lr)
+        return lr
+callback_lr = LearningRateScheduler(scheduler)
+callback_earlystop = EarlyStopping(monitor='val_loss', min_delta = 0.001, patience=10)
 
 #Equalizing weights
 train_w_df = pd.DataFrame()
@@ -319,7 +334,7 @@ train_w_df.loc[train_w_df.proc == 'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25','
 train_w = np.array(train_w_df['weight'])
 
 #Training the model
-history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
+history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2, validation_split = val_split, callbacks=[callback_lr,callback_earlystop])
 
 # Output Score
 y_pred_test = model.predict_proba(x=x_test)
