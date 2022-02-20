@@ -40,9 +40,8 @@ map_def_2 = [
 ['ZH',400,401,402,403,404,405],
 ]
 
-binNames = ['QQ2HQQ_FWDH','rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25'] 
+binNames = ['rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25'] 
 bins = 50
-
 
 train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
      'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
@@ -227,7 +226,7 @@ for i in range(data.shape[0]):
     else:
         if dijetmass[i] < 350:
             if dijetmass[i] > 60 and dijetmass[i] < 120:
-                proc_value = 'VH'
+                proc_value = 'QQ2HQQ_GE2J_MJJ_60_120'
             else:
                 proc_value = 'rest'
         else:
@@ -256,7 +255,7 @@ def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cma
     fig, ax = plt.subplots(figsize = (10,10))
     #plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks,classes,rotation=45)
+    plt.xticks(tick_marks,classes,rotation=90)
     plt.yticks(tick_marks,classes)
     if normalize:
         cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
