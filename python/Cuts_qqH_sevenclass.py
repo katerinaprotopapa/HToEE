@@ -29,7 +29,7 @@ from keras.metrics import categorical_crossentropy, binary_crossentropy
 
 map_def_2 = [
 ['QQ2HQQ_FWDH',200],
-['rest', 201, 202, 203, 205],
+['qqH_Rest', 201, 202, 203, 205],
 ['QQ2HQQ_GE2J_MJJ_60_120',204],
 ['QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200',206],
 ['QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',207],
@@ -40,7 +40,13 @@ map_def_2 = [
 ['ZH',400,401,402,403,404,405],
 ]
 
-binNames = ['rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25'] 
+binNames = ['qqH_Rest',
+            'QQ2HQQ_GE2J_MJJ_60_120',
+            'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
+            'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25',
+            'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
+            'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25',
+            'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200']
 bins = 50
 
 train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
@@ -58,10 +64,10 @@ train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','dip
      'subsubleadJetMass',
      'metPt','metPhi','metSumET',
      'nSoftJets',
-     'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
-     'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
-     'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
-     'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
+     #'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
+     #'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
+     #'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
+     #'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
      ]
 
 train_vars.append('proc')
@@ -115,14 +121,24 @@ data = data[data.proc_original != 'ZH']
 #y_train_labels_num, y_train_labels_def = pd.factorize(data['proc'])
 
 num_categories = data['proc_original'].nunique()
-y_train_labels_num, y_train_labels_def = pd.factorize(data['proc_original'])
-
-#Label definition:
-print('Label Definition:')
-label_def = []
-for i in range(num_categories):
-    label_def.append([i,y_train_labels_def[i]])
-    print(i,y_train_labels_def[i])
+proc_original = np.array(data['proc_original'])
+#Assign the numbers in the same order as the binNames above
+y_train_labels_num = []
+for i in proc_original:
+    if i == 'qqH_Rest':
+        y_train_labels_num.append(0)
+    if i == 'QQ2HQQ_GE2J_MJJ_60_120':
+        y_train_labels_num.append(1)
+    if i == 'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25':
+        y_train_labels_num.append(2)
+    if i == 'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25':
+        y_train_labels_num.append(3)
+    if i == 'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25':
+        y_train_labels_num.append(4)
+    if i == 'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25':
+        y_train_labels_num.append(5)
+    if i == 'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200':
+        y_train_labels_num.append(6)
 
 data['proc_num'] = y_train_labels_num
 
@@ -222,13 +238,13 @@ proc = []
 for i in range(data.shape[0]):
     #print('eeee')
     if njets[i] == 0 or njets[i] == 1:
-        proc_value = 'rest'
+        proc_value = 'qqH_Rest'
     else:
         if dijetmass[i] < 350:
             if dijetmass[i] > 60 and dijetmass[i] < 120:
                 proc_value = 'QQ2HQQ_GE2J_MJJ_60_120'
             else:
-                proc_value = 'rest'
+                proc_value = 'qqH_Rest'
         else:
             if diphotonpt[i] < 200:
                 if  dijetmass[i] < 700 and diphotonjetspt[i] < 25:
