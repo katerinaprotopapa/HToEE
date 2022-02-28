@@ -19,7 +19,7 @@ df = pd.concat(dataframes, sort=False, axis=0)
 print('Loaded dataframe')
 
 
-list_variables = [#'diphotonPt'
+list_variables = ['diphotonPt'
                 #, 'leadPhotonEta'
                 #, 'subleadPhotonEta' 
                 #, 'leadPhotonIDMVA' 
@@ -28,11 +28,10 @@ list_variables = [#'diphotonPt'
                 #, 'weight' 
                 #, 'centralObjectWeight' 
                 #, 'leadPhotonPtOvM'
-                #, 'dijetMass' 
+                , 'dijetMass' 
                 #, 'subleadPhotonPtOvM'
-                 'leadJetPt'
+                # 'leadJetPt'
                 #, 'subleadJetPt' #'leadElectronIDMVA', 'subleadElectronIDMVA',
-                #, 'dijetMass'
                 #, 'dijetAbsDEta' 
                 #, 'dijetDPhi'
                 #, 'diphotonCosPhi'
@@ -44,7 +43,7 @@ list_variables = [#'diphotonPt'
                 #, 'subsubleadJetPhi' 
                 #, 'min_IDMVA'
                 #, 'max_IDMVA'
-                # 'dijetCentrality'
+                 ,'dijetCentrality'
                 # 'leadJetBTagScore' 
                 # 'subleadJetBTagScore', 'subsubleadJetBTagScore'
                 #, 'leadJetMass' ,'leadPhotonEn', 'leadPhotonMass' ,
@@ -57,6 +56,7 @@ list_variables = [#'diphotonPt'
                 #'subleadJetDiphoDEta','subleadJetEn','subleadJetEta','subleadJetPhi','subsubleadPhotonIDMVA',				
                 #'diphotonEta','diphotonPhi','dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
                 #'nSoftJets'
+                ,'leadElectronEn', 'leadElectronMass', 'leadElectronPt'
 ]
 
 for variable in list_variables:
@@ -111,10 +111,10 @@ for variable in list_variables:
     ax.hist(tth_sig, bins = num_bins, density = normalize, color = '#c21bcf', label = 'ttH', stacked = True, histtype = 'step', weights = scale * tth_sig_w)
     ax.hist(th_sig, bins = num_bins, density = normalize, color = '#dbb104', label = 'tH', stacked = True, histtype = 'step', weights = scale * th_sig_w)
 
-    ax.set_xlim(0,300)
+    #ax.set_xlim(0,300)
     ax.set_ylim(0,0.04)
-    ax.set_xticks([0,50,100,150,200,250,300])
-    ax.set_yticks([0,0.005,0.01, 0.015,0.02, 0.025, 0.03, 0.035, 0.04])
+    #ax.set_xticks([0,50,100,150,200,250,300])
+    #ax.set_yticks([0,0.005,0.01, 0.015,0.02, 0.025, 0.03, 0.035, 0.04])
     ax.legend(loc = 'upper right')
     ax.set_xlabel(variable, ha='center',x=0.5, size = 12)
     ax.set_ylabel('Fraction of events',ha='center', y=0.5, size = 12)
