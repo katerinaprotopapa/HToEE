@@ -39,7 +39,7 @@ from keras.metrics import categorical_crossentropy, binary_crossentropy
 #learning_rate = 0.001
 
 #Optimized according to 4class
-num_epochs = 200
+num_epochs = 1
 batch_size = 64
 test_split = 0.2
 val_split = 0.1
@@ -504,16 +504,17 @@ def plot_roc_curve(signal = 'QQ2HQQ_GE2J_MJJ_60_120', y_test = y_test, y_pred_te
     #y_pred_test  = clf.predict_proba(x_test)
     for i in range(num_categories):
         if binNames[i] == signal:
-            sig_y_test  = np.where(y_test==i, 1, 0)
-            print('sig_y_test', type(sig_y_test))
+            #sig_y_test  = np.where(y_test==i, 1, 0)
+            sig_y_test = y_test[:,i]
+            print('sig_y_test', sig_y_test)
             y_pred_test_array = y_pred_test[:,i]
-            print('y_pred_test_array', type(y_pred_test_array))
+            print('y_pred_test_array', y_pred_test_array)
             print('Here')
-            #fpr_keras, tpr_keras, thresholds_keras = roc_curve(sig_y_test, y_pred_test_array, sample_weight = test_w)
             #test_w = test_w.reshape(1, -1)
-            print('test_w', type(test_w))
-            auc = roc_auc_score(sig_y_test, y_pred_test_array, sample_weight = test_w)
-            print('auc: ', auc)
+            print('test_w', test_w)
+            #auc = roc_auc_score(sig_y_test, y_pred_test_array, sample_weight = test_w)
+            fpr_keras, tpr_keras, thresholds_keras = roc_curve(sig_y_test, y_pred_test_array, sample_weight = test_w)
+            #print('auc: ', auc)
             print('Here')
             fpr_keras.sort()
             tpr_keras.sort()
@@ -528,9 +529,9 @@ def plot_roc_curve(signal = 'QQ2HQQ_GE2J_MJJ_60_120', y_test = y_test, y_pred_te
     print("Plotting ROC Curve")
     plt.close()
 
-plot_performance_plot()
+#plot_performance_plot()
 
-#plot_roc_curve()
+plot_roc_curve()
 """
 plot_output_score(data='output_score_qqh1')
 plot_output_score(data='output_score_qqh2')
@@ -542,7 +543,7 @@ plot_output_score(data='output_score_qqh7')
 """
 #plot_accuracy()
 #plot_loss()
-plot_confusion_matrix(cm,binNames,normalize=True)
+#plot_confusion_matrix(cm,binNames,normalize=True)
 
 
 #save as a pickle file
