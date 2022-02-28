@@ -75,12 +75,16 @@ train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','dip
      'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
      'subsubleadJetMass',
      'metPt','metPhi','metSumET',
-     'nSoftJets',
+     'nSoftJets'
      #'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
      #'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
      #'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
      #'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
      ]
+"""
+train_vars = ['dijetMass', 'diphotonPt', 'leadJetPt', 'leadJetPhi', 'subleadJetPt', 'subleadJetPhi', 
+            'leadPhotonPt', 'leadPhotonPhi', 'subleadPhotonPt', 'subleadPhotonPhi', 'diphotonMass', 'leadPhotonPtOvM', 'subleadPhotonPtOvM']
+"""
 
 train_vars.append('proc')
 train_vars.append('weight')
@@ -101,6 +105,7 @@ data = df[train_vars]
 # pTHjj and njets variable construction
 # my soul has exited my body since I have tried every possible pandas way to do this ... I will turn to numpy arrays now for my own sanity
 # most inefficient code ever written lessgoooo
+
 
 leadJetPt = np.array(data['leadJetPt'])
 leadJetPhi = np.array(data['leadJetPhi'])
@@ -241,6 +246,8 @@ data = data.drop(columns=['HTXS_stage_0'])
 data = data.drop(columns=['proc_new'])
 data = data.drop(columns=['HTXS_stage1_2_cat_pTjet30GeV'])
 
+#data = data.drop(columns = ['leadJetPt', 'leadJetPhi', 'subleadJetPt', 'subleadJetPhi', 'leadPhotonPt', 'leadPhotonPhi', 'subleadPhotonPt', 'subleadPhotonPhi', 'diphotonMass', 'leadPhotonPtOvM', 'subleadPhotonPtOvM'])
+
 #With num
 x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data, y_train_labels_num, weights, y_train_labels, test_size = test_split, shuffle = True)
 #With hot
@@ -248,7 +255,7 @@ x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test
 
 #Before n_estimators = 100, maxdepth=4, gamma = 1
 #Improved n_estimators = 300, maxdepth = 7, gamme = 4
-clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=100, 
+clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=500, 
                             eta=0.1, maxDepth=6, min_child_weight=0.01, 
                             subsample=0.6, colsample_bytree=0.6, gamma=4,
                             num_class=4)
@@ -388,8 +395,8 @@ def plot_output_score(data='output_score_qqh', density=False,):
     name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_'+data
     plt.savefig(name, dpi = 300)
 
-def plot_performance_plot(cm=cm,labels=binNames):
-    cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
+def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
+    cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
         for j in range(len(cm[1])):
             cm[i][j] = float("{:.3f}".format(cm[i][j]))
@@ -401,8 +408,8 @@ def plot_performance_plot(cm=cm,labels=binNames):
     plt.xticks(tick_marks,labels,rotation=90)
     bottom = np.zeros(len(labels))
     for i in range(len(cm)):
-        ax.bar(labels, cm[:,i],label=labels[i],bottom=bottom)
-        bottom += np.array(cm[:,i])
+        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
+        bottom += np.array(cm[i,:])
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
@@ -432,7 +439,7 @@ def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values 
 plot_confusion_matrix(cm,binNames,normalize=True)
 
 plot_performance_plot()
-
+"""
 plot_output_score(data='output_score_qqh1')
 plot_output_score(data='output_score_qqh2')
 plot_output_score(data='output_score_qqh3')
@@ -440,4 +447,4 @@ plot_output_score(data='output_score_qqh4')
 plot_output_score(data='output_score_qqh5')
 plot_output_score(data='output_score_qqh6')
 plot_output_score(data='output_score_qqh7')
-
+"""
