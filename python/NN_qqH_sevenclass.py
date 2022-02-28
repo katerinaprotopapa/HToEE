@@ -510,7 +510,7 @@ def plot_roc_curve(signal = 'QQ2HQQ_GE2J_MJJ_60_120', y_test = y_test, y_pred_te
             print('y_pred_test_array', type(y_pred_test_array))
             print('Here')
             #fpr_keras, tpr_keras, thresholds_keras = roc_curve(sig_y_test, y_pred_test_array, sample_weight = test_w)
-            test_w = test_w.reshape(1, -1)
+            #test_w = test_w.reshape(1, -1)
             print('test_w', type(test_w))
             auc = roc_auc_score(sig_y_test, y_pred_test_array, sample_weight = test_w)
             print('auc: ', auc)
