@@ -396,6 +396,7 @@ def plot_output_score(data='output_score_qqh', density=False,):
     plt.savefig(name, dpi = 300)
 
 def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
+    #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
         for j in range(len(cm[1])):
@@ -407,8 +408,11 @@ def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
     tick_marks = np.arange(len(labels))
     plt.xticks(tick_marks,labels,rotation=90)
     bottom = np.zeros(len(labels))
+    #color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104']
     for i in range(len(cm)):
-        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
+        #ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
+        #bottom += np.array(cm[i,:])
+        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom) #,color=color[i])
         bottom += np.array(cm[i,:])
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
@@ -416,9 +420,44 @@ def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
     #plt.title('Performance Plot')
     plt.ylabel('Fraction of events')
     ax.set_xlabel('Events', ha='right',x=1,size=9) #, x=1, size=13)
-    name = 'plotting/BDT_plots/BDt_qqH_Sevenclass_Performance_Plot'
-    plt.savefig(name, dpi = 500)
+    name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Performance_Plot'
+    plt.savefig(name, dpi = 1200)
     plt.show()
+
+def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test):
+    # sample weights
+    # find weighted average 
+    fig, ax = plt.subplots()
+    #y_pred_test  = clf.predict_proba(x_test)
+    for k in range(len(binNames)):
+        signal = binNames[k]
+        for i in range(num_categories):
+            if binNames[i] == signal:
+                sig_y_test  = np.where(y_test==i, 1, 0)
+                #sig_y_test = y_test[:,i]
+                #sig_y_test = y_test
+                print('sig_y_test', sig_y_test)
+                y_pred_test_array = y_pred_test[:,i]
+                print('y_pred_test_array', y_pred_test_array)
+                print('Here')
+                #test_w = test_w.reshape(1, -1)
+                print('test_w', test_w)
+                #auc = roc_auc_score(sig_y_test, y_pred_test_array, sample_weight = test_w)
+                fpr_keras, tpr_keras, thresholds_keras = roc_curve(sig_y_test, y_pred_test_array, sample_weight = test_w)
+                #print('auc: ', auc)
+                print('Here')
+                fpr_keras.sort()
+                tpr_keras.sort()
+                auc_test = auc(fpr_keras, tpr_keras)
+                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]))
+    ax.legend(loc = 'lower right', fontsize = 'x-small')
+    ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
+    ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
+    ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
+    name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_ROC_curve_'
+    plt.savefig(name, dpi = 1200)
+    print("Plotting ROC Curve")
+    plt.close()
 
 # Feature Importance
 
@@ -436,9 +475,13 @@ def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values 
             plt.savefig('/plotting/BDT_plots/feature_importance_{0}.png'.format(i), dpi = 200)
             print('saving: /plotting/BDT_plots/feature_importance_{0}.png'.format(i))
 
-plot_confusion_matrix(cm,binNames,normalize=True)
+#plot_confusion_matrix(cm,binNames,normalize=True)
 
-plot_performance_plot()
+#plot_performance_plot()
+
+plot_roc_curve()
+
+
 """
 plot_output_score(data='output_score_qqh1')
 plot_output_score(data='output_score_qqh2')
