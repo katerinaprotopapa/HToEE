@@ -157,7 +157,7 @@ y_pred = y_pred_test.argmax(axis=1)
 #y_true = y_test.argmax(axis=1)
 y_true = y_test
 print 'Accuracy score: '
-NNaccuracy = accuracy_score(y_true, y_pred)
+NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = test_w)
 print(NNaccuracy)
 
 #Confusion Matrix

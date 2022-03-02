@@ -13,7 +13,7 @@ from keras.utils import np_utils
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score, auc
 
 #Define key quantities, use to tune BDT
-num_estimators = 500
+num_estimators = 100
 test_split = 0.15
 learning_rate = 0.001
 
@@ -348,7 +348,7 @@ y_pred = y_pred_test.argmax(axis=1)
 #y_true = y_test.argmax(axis=1)
 y_true = y_test
 print 'Accuracy score: '
-NNaccuracy = accuracy_score(y_true, y_pred)
+NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = test_w)
 print(NNaccuracy)
 
 #Confusion Matrix

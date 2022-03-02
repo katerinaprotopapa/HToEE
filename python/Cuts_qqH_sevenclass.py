@@ -247,37 +247,58 @@ diphotonpt = np.array(data['diphotonPt'])
 diphotonjetspt = np.array(data['pTHjj'])
 
 proc = []
+y_train_labels_num_pred = []
 for i in range(data.shape[0]):
     #print('eeee')
     if njets[i] == 0 or njets[i] == 1:
         proc_value = 'qqH_Rest'
+        proc_value_num = 0
     else:
         if dijetmass[i] < 350:
             if dijetmass[i] > 60 and dijetmass[i] < 120:
                 proc_value = 'QQ2HQQ_GE2J_MJJ_60_120'
+                proc_value_num = 1
             else:
                 proc_value = 'qqH_Rest'
+                proc_value_num = 0
         else:
             if diphotonpt[i] < 200:
                 if  dijetmass[i] < 700 and diphotonjetspt[i] < 25:
                     proc_value = 'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25'
+                    proc_value_num = 2
                 elif dijetmass[i] < 700 and diphotonjetspt[i] >= 25:
                     proc_value = 'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25'
+                    proc_value_num = 3
                 elif dijetmass[i] >= 700 and diphotonjetspt[i] < 25:
                     proc_value = 'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25'
+                    proc_value_num = 4
                 else:
                     proc_value = 'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25'
+                    proc_value_num = 5
             else: 
                 proc_value = 'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200'
+                proc_value_num = 6
     proc.append(proc_value)
+    y_train_labels_num_pred.append(proc_value_num)
+y_train_labels_num_pred = np.array(y_train_labels_num_pred)
 data['proc_new'] = proc
 
 # Confusion Matrix
 
-y_true = data['proc_original']
-y_pred = data['proc_new']
+y_true_old = data['proc_original']
+y_pred_old = data['proc_new']
+y_true = y_train_labels_num
+y_pred = y_train_labels_num_pred
 
-cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = weights)
+print 'Accuracy score: '
+NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = weights)
+print(NNaccuracy)
+
+#cm_old = confusion_matrix(y_true=y_true,y_pred=y_pred)
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred,sample_weight=weights)
+#cm_new = np.zeros((len(binNames),len(binNames)),dtype=int)
+#for i in range(len(y_true)):
+#    cm_new[y_true[i]][y_pred[i]] += 1
 
 #Confusion Matrix
 def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='Confusion matrix',cmap=plt.cm.Blues):
@@ -330,7 +351,7 @@ def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = col
     #plt.title('Performance Plot')
     plt.ylabel('Fraction of events', size = 12)
     ax.set_xlabel('Events',size=12) #, x=1, size=13)
-    name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot'
+    name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot'
     plt.tight_layout()
     plt.savefig(name, dpi = 1200)
     plt.show()
@@ -339,7 +360,7 @@ def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = col
 plot_confusion_matrix(cm,binNames,normalize=True)
 plot_performance_plot(cm, binNames,normalize = True)
 
-print('Cuts_qqH_sevenclass')
+print('Cuts_qqH_sevenclass: ', NNaccuracy)
 
 
 

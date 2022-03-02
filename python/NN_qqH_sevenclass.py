@@ -43,7 +43,7 @@ viridis = cm.get_cmap('viridis', 8)
 #learning_rate = 0.001
 
 #Optimized according to 4class
-num_epochs = 200
+num_epochs = 40
 batch_size = 64
 test_split = 0.2
 val_split = 0.1
@@ -427,7 +427,7 @@ qqh6_w2 = x_test_qqh7['weight']
 y_pred = y_pred_test.argmax(axis=1)
 y_true = y_test.argmax(axis=1)
 print 'Accuracy score: '
-NNaccuracy = accuracy_score(y_true, y_pred)
+NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = test_w)
 print(NNaccuracy)
 
 #Confusion Matrix
