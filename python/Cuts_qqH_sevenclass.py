@@ -40,6 +40,8 @@ map_def_2 = [
 ['ZH',400,401,402,403,404,405],
 ]
 
+color  = ['silver','indianred','yellowgreen','lightgreen','green','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
+
 binNames = ['qqH_Rest',
             'QQ2HQQ_GE2J_MJJ_60_120',
             'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
@@ -47,6 +49,16 @@ binNames = ['qqH_Rest',
             'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
             'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25',
             'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200']
+
+labelNames = [r'qqH rest', 
+            r'60<m$_{jj}$<120',
+            r'350<m$_{jj}$<700, 0<p$_{T}^{H}$<200, 0<p$_{T}^{H_{jj}}$<25',
+            r'350<m$_{jj}$<700, 0<p$_{T}^{H}$<200, p$_{T}^{H_{jj}}$>25',
+            r'm$_{jj}$>700, 0<p$_{T}^{H}$<200, 0<p$_{T}^{H_{jj}}$<25',
+            r'm$_{jj}$>700, 0<p$_{T}^{H}$<200, p$_{T}^{H_{jj}}$>25',
+            r'm$_{jj}$>350, p$_{T}^{H}$>200'
+            ]
+
 bins = 50
 
 train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
@@ -265,14 +277,15 @@ data['proc_new'] = proc
 y_true = data['proc_original']
 y_pred = data['proc_new']
 
-cm = confusion_matrix(y_true=y_true,y_pred=y_pred)
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = weights)
 
-def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cmap=plt.cm.Blues):
+#Confusion Matrix
+def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='Confusion matrix',cmap=plt.cm.Blues):
     fig, ax = plt.subplots(figsize = (10,10))
     #plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks,classes,rotation=90)
-    plt.yticks(tick_marks,classes)
+    plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
+    plt.yticks(tick_marks,labels)
     if normalize:
         cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
         for i in range(len(cm[0])):
@@ -281,44 +294,52 @@ def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cma
     thresh = cm.max()/2.
     print(cm)
     plt.imshow(cm,interpolation='nearest',cmap=cmap)
-    plt.title(title)
+    #plt.title(title)
     for i, j in product(range(cm.shape[0]),range(cm.shape[1])):
         plt.text(j,i,cm[i,j],horizontalalignment='center',color='white' if cm[i,j]>thresh else 'black')
     plt.tight_layout()
     plt.colorbar()
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted label')
+    plt.ylabel('True Label', size = 12)
+    plt.xlabel('Predicted label', size = 12)
     name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Confusion_Matrix'
+    plt.tight_layout()
     fig.savefig(name, dpi = 1200)
 
-def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
+def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = color):
+    #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
         for j in range(len(cm[1])):
             cm[i][j] = float("{:.3f}".format(cm[i][j]))
     cm = np.array(cm)
-    fig, ax = plt.subplots(figsize = (12,12))
+    fig, ax = plt.subplots(figsize = (10,10))
     plt.rcParams.update({
     'font.size': 9})
     tick_marks = np.arange(len(labels))
-    plt.xticks(tick_marks,labels,rotation=90)
+    plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
     bottom = np.zeros(len(labels))
+    #color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104']
     for i in range(len(cm)):
-        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
+        #ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
+        #bottom += np.array(cm[i,:])
+        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom,color=color[i])
         bottom += np.array(cm[i,:])
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
     #plt.title('Performance Plot')
-    plt.ylabel('Fraction of events')
-    ax.set_xlabel('Events', ha='right',x=1,size=9) #, x=1, size=13)
-    name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot'
-    plt.savefig(name, dpi = 500)
+    plt.ylabel('Fraction of events', size = 12)
+    ax.set_xlabel('Events',size=12) #, x=1, size=13)
+    name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot'
+    plt.tight_layout()
+    plt.savefig(name, dpi = 1200)
     plt.show()
 
 
 plot_confusion_matrix(cm,binNames,normalize=True)
 plot_performance_plot(cm, binNames,normalize = True)
+
+print('Cuts_qqH_sevenclass')
 
 
 
