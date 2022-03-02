@@ -13,7 +13,7 @@ from keras.utils import np_utils
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score, auc
 
 #Define key quantities, use to tune BDT
-num_estimators = 400
+num_estimators = 500
 test_split = 0.15
 learning_rate = 0.001
 
@@ -51,6 +51,9 @@ map_def_2 = [
 ['ZH',400,401,402,403,404,405],
 ]
 
+#color = ['#f0700c', '#e03b04', '#eef522', '#8cad05', '#f5df87', '#6e0903', '#8c4503']
+color  = ['silver','indianred','yellowgreen','lightgreen','green','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
+
 binNames = ['qqH_Rest',
             'QQ2HQQ_GE2J_MJJ_60_120',
             'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
@@ -58,6 +61,16 @@ binNames = ['qqH_Rest',
             'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
             'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25',
             'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200']
+
+labelNames = [r'qqH rest', 
+            r'60<m$_{jj}$<120',
+            r'350<m$_{jj}$<700, 0<p$_{T}^{H}$<200, 0<p$_{T}^{H_{jj}}$<25',
+            r'350<m$_{jj}$<700, 0<p$_{T}^{H}$<200, p$_{T}^{H_{jj}}$>25',
+            r'm$_{jj}$>700, 0<p$_{T}^{H}$<200, 0<p$_{T}^{H_{jj}}$<25',
+            r'm$_{jj}$>700, 0<p$_{T}^{H}$<200, p$_{T}^{H_{jj}}$>25',
+            r'm$_{jj}$>350, p$_{T}^{H}$>200'
+            ]
+
 bins = 50
 
 
@@ -255,7 +268,7 @@ x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test
 
 #Before n_estimators = 100, maxdepth=4, gamma = 1
 #Improved n_estimators = 300, maxdepth = 7, gamme = 4
-clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=500, 
+clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=num_estimators, 
                             eta=0.1, maxDepth=6, min_child_weight=0.01, 
                             subsample=0.6, colsample_bytree=0.6, gamma=4,
                             num_class=4)
@@ -339,15 +352,15 @@ NNaccuracy = accuracy_score(y_true, y_pred)
 print(NNaccuracy)
 
 #Confusion Matrix
-cm = confusion_matrix(y_true=y_true,y_pred=y_pred)
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 
 #Confusion Matrix
-def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cmap=plt.cm.Blues):
-    fig, ax = plt.subplots(figsize = (12,12))
+def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='Confusion matrix',cmap=plt.cm.Blues):
+    fig, ax = plt.subplots(figsize = (10,10))
     #plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks,classes,rotation=90)
-    plt.yticks(tick_marks,classes)
+    plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
+    plt.yticks(tick_marks,labels)
     if normalize:
         cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
         for i in range(len(cm[0])):
@@ -356,18 +369,19 @@ def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cma
     thresh = cm.max()/2.
     print(cm)
     plt.imshow(cm,interpolation='nearest',cmap=cmap)
-    plt.title(title)
+    #plt.title(title)
     for i, j in product(range(cm.shape[0]),range(cm.shape[1])):
         plt.text(j,i,cm[i,j],horizontalalignment='center',color='white' if cm[i,j]>thresh else 'black')
     plt.tight_layout()
     plt.colorbar()
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted label')
+    plt.ylabel('True Label', size = 12)
+    plt.xlabel('Predicted label', size = 12)
     name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Confusion_Matrix'
-    fig.savefig(name, dpi = 500)
+    plt.tight_layout()
+    fig.savefig(name, dpi = 1200)
 
 
-def plot_output_score(data='output_score_qqh', density=False,):
+def plot_output_score(data='output_score_qqh', density=False):
     #Can then change it to plotting proc
     print('Plotting',data)
     output_score_qqh1 = np.array(x_test_qqh1[data])
@@ -395,36 +409,37 @@ def plot_output_score(data='output_score_qqh', density=False,):
     name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_'+data
     plt.savefig(name, dpi = 300)
 
-def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
+def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = color):
     #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
         for j in range(len(cm[1])):
             cm[i][j] = float("{:.3f}".format(cm[i][j]))
     cm = np.array(cm)
-    fig, ax = plt.subplots(figsize = (12,12))
+    fig, ax = plt.subplots(figsize = (10,10))
     plt.rcParams.update({
     'font.size': 9})
     tick_marks = np.arange(len(labels))
-    plt.xticks(tick_marks,labels,rotation=90)
+    plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
     bottom = np.zeros(len(labels))
     #color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104']
     for i in range(len(cm)):
         #ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
         #bottom += np.array(cm[i,:])
-        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom) #,color=color[i])
+        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom,color=color[i])
         bottom += np.array(cm[i,:])
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
     #plt.title('Performance Plot')
-    plt.ylabel('Fraction of events')
-    ax.set_xlabel('Events', ha='right',x=1,size=9) #, x=1, size=13)
+    plt.ylabel('Fraction of events', size = 12)
+    ax.set_xlabel('Events',size=12) #, x=1, size=13)
     name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Performance_Plot'
+    plt.tight_layout()
     plt.savefig(name, dpi = 1200)
     plt.show()
 
-def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test):
+def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -449,12 +464,12 @@ def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_te
                 fpr_keras.sort()
                 tpr_keras.sort()
                 auc_test = auc(fpr_keras, tpr_keras)
-                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]))
-    ax.legend(loc = 'lower right', fontsize = 'x-small')
+                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), labelNames[i]), color = color[i])
+    ax.legend(loc = 'lower right', fontsize = 'small')
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
     ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
-    name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_ROC_curve_'
+    name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_ROC_curve'
     plt.savefig(name, dpi = 1200)
     print("Plotting ROC Curve")
     plt.close()
@@ -475,11 +490,13 @@ def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values 
             plt.savefig('/plotting/BDT_plots/feature_importance_{0}.png'.format(i), dpi = 200)
             print('saving: /plotting/BDT_plots/feature_importance_{0}.png'.format(i))
 
-#plot_confusion_matrix(cm,binNames,normalize=True)
+plot_confusion_matrix(cm,binNames,normalize=True)
 
-#plot_performance_plot()
+plot_performance_plot()
 
 plot_roc_curve()
+
+print('BDT_qqH_sevenclass: ', NNaccuracy)
 
 
 """

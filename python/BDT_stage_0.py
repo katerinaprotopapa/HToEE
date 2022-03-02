@@ -161,7 +161,7 @@ NNaccuracy = accuracy_score(y_true, y_pred)
 print(NNaccuracy)
 
 #Confusion Matrix
-cm = confusion_matrix(y_true=y_true,y_pred=y_pred)
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 
 
 #Confusion Matrix
@@ -189,7 +189,7 @@ def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cma
     name = 'plotting/BDT_plots/BDT_stage_0_Confusion_Matrix'
     fig.savefig(name, dpi = 1200)
 
-def plot_performance_plot(cm=cm,labels=binNames):
+def plot_performance_plot(cm=cm,labels=binNames, color = color):
     #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
@@ -203,13 +203,13 @@ def plot_performance_plot(cm=cm,labels=binNames):
     'font.size': 12})
     tick_marks = np.arange(len(labels))
     plt.xticks(tick_marks,labels,rotation=90)
-    color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104']
+    #color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104'] - ugly
     bottom = np.zeros(len(labels))
     for i in range(len(cm)):
         #ax.bar(labels, cm[:,i],label=labels[i],bottom=bottom)
         #bottom += np.array(cm[:,i])
         ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom,color=color[i])
-        bottom += np.array(cm[i,:])
+        bottom += np.array(cm[i,:]) 
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
@@ -221,7 +221,7 @@ def plot_performance_plot(cm=cm,labels=binNames):
     plt.show()
 
 
-def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test):
+def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -245,7 +245,7 @@ def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_te
                 fpr_keras.sort()
                 tpr_keras.sort()
                 auc_test = auc(fpr_keras, tpr_keras)
-                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]))
+                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]), color = color[i])
     ax.legend(loc = 'lower right', fontsize = 'x-small')
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)

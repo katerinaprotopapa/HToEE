@@ -38,7 +38,7 @@ learning_rate = 0.0001
 
 #STXS mapping
 map_def = [['ggH',10,11],['qqH',20,21,22,23],['WH',30,31],['ZH',40,41],['ttH',60,61],['tH',80,81]]
-
+color = ['#54aaf8', '#f08633', '#8bfa71', '#166e02','#ea3cf7', '#fef050']
 epochs = np.linspace(1,num_epochs,num_epochs,endpoint=True).astype(int) #For plotting
 binNames = ['ggH','qqH','WH','ZH','ttH','tH'] 
 bins = 50
@@ -232,7 +232,7 @@ NNaccuracy = accuracy_score(y_true, y_pred)
 print(NNaccuracy)
 
 #Confusion Matrix
-cm = confusion_matrix(y_true=y_true,y_pred=y_pred)
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 
 def roc_comp_step1(ypred,output):
     y_pred_prob = []
@@ -267,12 +267,12 @@ def plot_output_score(data='output_score_qqh', density=False,):
     output_score_th = np.array(x_test_th[data])
 
     fig, ax = plt.subplots()
-    ax.hist(output_score_ggh, bins=50, label='ggH', histtype='step',weights=ggh_w)#,density=True) 
-    ax.hist(output_score_qqh, bins=50, label='qqH', histtype='step',weights=qqh_w) #density=True)
-    ax.hist(output_score_wh, bins=50, label='WH', histtype='step',weights=wh_w) #density=True) 
-    ax.hist(output_score_zh, bins=50, label='ZH', histtype='step',weights=zh_w) #density=True) 
-    ax.hist(output_score_tth, bins=50, label='ttH', histtype='step',weights=tth_w) #density=True)
-    ax.hist(output_score_th, bins=50, label='tH', histtype='step',weights=th_w) #density=True)
+    ax.hist(output_score_ggh, bins=50, label='ggH', histtype='step',weights=ggh_w, color = color[0])#,density=True) 
+    ax.hist(output_score_qqh, bins=50, label='qqH', histtype='step',weights=qqh_w, color = color[1]) #density=True)
+    ax.hist(output_score_wh, bins=50, label='WH', histtype='step',weights=wh_w, color = color[2]) #density=True) 
+    ax.hist(output_score_zh, bins=50, label='ZH', histtype='step',weights=zh_w, color = color[3]) #density=True) 
+    ax.hist(output_score_tth, bins=50, label='ttH', histtype='step',weights=tth_w, color = color[4]) #density=True)
+    ax.hist(output_score_th, bins=50, label='tH', histtype='step',weights=th_w, color = color[5]) #density=True)
     plt.legend()
     plt.title('Output Score')
     plt.ylabel('Fraction of Events')
@@ -338,7 +338,7 @@ def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cma
     name = 'plotting/NN_plots/NN_Sixclass_Confusion_Matrix'
     fig.savefig(name, dpi = 1200)
 
-def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
+def plot_performance_plot(cm=cm,labels=binNames, normalize = True, color = color):
     #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
@@ -355,10 +355,10 @@ def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
     for i in range(len(cm)):
         #ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
         #bottom += np.array(cm[i,:])
-        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom) #,color=color[i])
+        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom,color=color[i])
         bottom += np.array(cm[i,:])
     plt.legend()
-    current_bottom, current_top = ax.get_ylim()
+    current_bottom, current_top = ax.get_ylim()  
     ax.set_ylim(bottom=0, top=current_top*1.3)
     #plt.title('Performance Plot')
     plt.ylabel('Fraction of events')
@@ -367,7 +367,7 @@ def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
     plt.savefig(name, dpi = 1200)
     plt.show()
 
-def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test):
+def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -391,7 +391,7 @@ def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_te
                 fpr_keras.sort()
                 tpr_keras.sort()
                 auc_test = auc(fpr_keras, tpr_keras)
-                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]))
+                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]), color = color[i])
     ax.legend(loc = 'lower right', fontsize = 'x-small')
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)

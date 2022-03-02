@@ -37,10 +37,11 @@ test_split = 0.15
 learning_rate = 0.0001
 
 #STXS mapping
-map_def = [['ggH',10,11],['VBF',20,21],['VH',22, 23, 30, 31, 40, 41],['ttH',60,61],['tH',80,81]]
+map_def = [['ggH',10,11],['qqH',20,21,22,23],['VH',30,31,40,41],['ttH',60,61],['tH',80,81]]
 
 epochs = np.linspace(1,num_epochs,num_epochs,endpoint=True).astype(int) #For plotting
-binNames = ['ggH','VBF','VH','ttH','tH'] 
+binNames = ['ggH','qqH','VH','ttH','tH'] 
+color = ['#54aaf8', '#f08633', '#8bfa71', '#ea3cf7', '#fef050']
 bins = 50
 
 #Directories
@@ -48,26 +49,30 @@ modelDir = 'neural_networks/models/'
 plotDir  = 'neural_networks/plots/'
 
 #Define the input features
-train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
-     'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
-     'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
-     'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi', 'leadPhotonPtOvM',
-     'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
-     'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
-     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
-     'subleadPhotonEn','subleadPhotonPt', 'subleadPhotonPtOvM',
-     'subleadJetDiphoDPhi','subleadJetDiphoDEta',
-     'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
-     'subleadJetEn','subleadJetEta','subleadJetPhi',
-     'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
-     'subsubleadJetMass',
-     'metPt','metPhi','metSumET',
-     'nSoftJets',
-     'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
-     'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
-     'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
-     'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
-     ]
+train_vars = ['diphotonMass', 'diphotonPt', 'diphotonEta',
+'diphotonPhi', 'diphotonCosPhi', 'diphotonSigmaMoM',
+'leadPhotonIDMVA', 'leadPhotonPtOvM', #'leadPhotonEta',
+'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi',
+#'subleadPhotonIDMVA', 
+'subleadPhotonPtOvM', 'subleadPhotonEta',
+'subleadPhotonEn', 'subleadPhotonPt',
+'subleadPhotonPhi', 'dijetMass', 'dijetPt', 'dijetEta', 'dijetPhi',
+#'dijetDPhi', 'dijetAbsDEta', 'dijetCentrality', 'dijetMinDRJetPho',
+'dijetDiphoAbsDEta', 'leadJetPUJID', 'leadJetPt', 'leadJetEn',
+'leadJetEta', 'leadJetPhi',# 'leadJetMass', 'leadJetBTagScore',
+'leadJetDiphoDEta', 'leadJetDiphoDPhi', 'subleadJetPUJID',
+'subleadJetPt', 'subleadJetEn', 'subleadJetEta', 'subleadJetPhi',
+'subleadJetMass',# 'subleadJetBTagScore', 'subleadJetDiphoDPhi',
+#'subleadJetDiphoDEta',
+#, 'subsubleadJetPUJID', 'subsubleadJetPt',
+#'subsubleadJetEn', 'subsubleadJetEta', 'subsubleadJetPhi',
+#'subsubleadJetMass', 'subsubleadJetBTagScore','nSoftJets',
+#'metPt','metPhi','metSumET'
+#'leadElectronEn','leadElectronMass','leadElectronPt','leadElectronEta','leadElectronPhi','leadElectronCharge',
+#'leadMuonEn','leadMuonMass','leadMuonPt','leadMuonEta','leadMuonPhi','leadMuonCharge',
+#'subleadElectronEn','subleadElectronMass','subleadElectronPt','subleadElectronEta','subleadElectronPhi','subleadElectronCharge',
+#'subleadMuonEn','subleadMuonMass','subleadMuonPt','subleadMuonEta','subleadMuonPhi','subleadMuonCharge'
+]
 #Add proc and weight to shuffle with data
 train_vars.append('proc')
 train_vars.append('weight')
@@ -173,13 +178,13 @@ train_w_df = pd.DataFrame()
 train_w = 300 * train_w # to make loss function O(1)
 train_w_df['weight'] = train_w
 train_w_df['proc'] = proc_arr_train
-vbf_sum_w = train_w_df[train_w_df['proc'] == 'VBF']['weight'].sum()
+qqh_sum_w = train_w_df[train_w_df['proc'] == 'qqH']['weight'].sum()
 ggh_sum_w = train_w_df[train_w_df['proc'] == 'ggH']['weight'].sum()
 vh_sum_w = train_w_df[train_w_df['proc'] == 'VH']['weight'].sum()
 tth_sum_w = train_w_df[train_w_df['proc'] == 'ttH']['weight'].sum()
 th_sum_w = train_w_df[train_w_df['proc'] == 'tH']['weight'].sum()
-train_w_df.loc[train_w_df.proc == 'VBF','weight'] = (train_w_df[train_w_df['proc'] == 'VBF']['weight'] * ggh_sum_w / qqh_sum_w)
-train_w_df.loc[train_w_df.proc == 'VH','weight'] = (train_w_df[train_w_df['proc'] == 'VH']['weight'] * ggh_sum_w / wh_sum_w)
+train_w_df.loc[train_w_df.proc == 'qqH','weight'] = (train_w_df[train_w_df['proc'] == 'qqH']['weight'] * ggh_sum_w / qqh_sum_w)
+train_w_df.loc[train_w_df.proc == 'VH','weight'] = (train_w_df[train_w_df['proc'] == 'VH']['weight'] * ggh_sum_w / vh_sum_w)
 train_w_df.loc[train_w_df.proc == 'ttH','weight'] = (train_w_df[train_w_df['proc'] == 'ttH']['weight'] * ggh_sum_w / tth_sum_w)
 train_w_df.loc[train_w_df.proc == 'tH','weight'] = (train_w_df[train_w_df['proc'] == 'tH']['weight'] * ggh_sum_w / th_sum_w)
 train_w = np.array(train_w_df['weight'])
@@ -194,14 +199,14 @@ x_test['weight'] = test_w
 x_test['output_score_ggh'] = y_pred_test[:,0]
 x_test['output_score_vbf'] = y_pred_test[:,1]
 x_test['output_score_vh'] = y_pred_test[:,2]
-x_test['output_score_tth'] = y_pred_test[:,4]
-x_test['output_score_th'] = y_pred_test[:,5]
+x_test['output_score_tth'] = y_pred_test[:,3]
+x_test['output_score_th'] = y_pred_test[:,4]
 
 output_score_ggh = np.array(y_pred_test[:,0])
 output_score_vbf = np.array(y_pred_test[:,1])
 output_score_vh = np.array(y_pred_test[:,2])
-output_score_tth = np.array(y_pred_test[:,4])
-output_score_th = np.array(y_pred_test[:,5])
+output_score_tth = np.array(y_pred_test[:,3])
+output_score_th = np.array(y_pred_test[:,4])
 
 x_test_ggh = x_test[x_test['proc'] == 'ggH']
 x_test_vbf = x_test[x_test['proc'] == 'VBF']
@@ -224,8 +229,9 @@ NNaccuracy = accuracy_score(y_true, y_pred)
 print(NNaccuracy)
 
 #Confusion Matrix
-cm = confusion_matrix(y_true=y_true,y_pred=y_pred)
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 
+"""
 def roc_comp_step1(ypred,output):
     y_pred_prob = []
     for i in range(len(ypred)):
@@ -245,7 +251,7 @@ def y_pred_prob(ytrue=y_true,ypred=y_pred,labeldef=label_def,proc='ggH',output=o
     return y_true_proc, y_pred_proc_prob
 
 y_true_ggh, y_pred_ggh_prob = y_pred_prob(proc='ggH',output=output_score_ggh)
-
+"""
 
 
 def plot_output_score(data='output_score_qqh', density=False,):
@@ -327,7 +333,7 @@ def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cma
     name = 'plotting/NN_plots/NN_stage_0_Confusion_Matrix'
     fig.savefig(name, dpi = 1200)
 
-def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
+def plot_performance_plot(cm=cm,labels=binNames, normalize = True, color = color):
     #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
@@ -336,11 +342,12 @@ def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
     cm = np.array(cm)
     fig, ax = plt.subplots(figsize = (12,12))
     plt.rcParams.update({
-    'font.size': 9})
+    'font.size': 9}) 
     tick_marks = np.arange(len(labels))
     plt.xticks(tick_marks,labels,rotation=90)
     bottom = np.zeros(len(labels))
-    color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104']
+    #color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104'] #ugly
+    #color = ['#54aaf8', '#f08633', '#8bfa71', '#ea3cf7', '#fef050']
     for i in range(len(cm)):
         #ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
         #bottom += np.array(cm[i,:])
@@ -356,7 +363,7 @@ def plot_performance_plot(cm=cm,labels=binNames, normalize = True):
     plt.savefig(name, dpi = 1200)
     plt.show()
 
-def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test):
+def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -380,7 +387,7 @@ def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_te
                 fpr_keras.sort()
                 tpr_keras.sort()
                 auc_test = auc(fpr_keras, tpr_keras)
-                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]))
+                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]), color = color[i])
     ax.legend(loc = 'lower right', fontsize = 'x-small')
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)

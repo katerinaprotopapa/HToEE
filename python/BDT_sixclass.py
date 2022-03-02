@@ -13,12 +13,12 @@ from keras.utils import np_utils
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score, auc
 
 #Define key quantities, use to tune BDT
-num_estimators = 300
+num_estimators = 1
 test_split = 0.15
 
 #STXS mapping
 map_def = [['ggH',10,11],['qqH',20,21,22,23],['WH',30,31],['ZH',40,41],['ttH',60,61],['tH',80,81]]
-
+color = ['#54aaf8', '#f08633', '#8bfa71', '#166e02','#ea3cf7', '#fef050']
 binNames = ['ggH','qqH','ZH','WH','ttH','tH'] 
 bins = 50
 
@@ -27,21 +27,21 @@ train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','dip
      'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
      'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
      'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi', 'leadPhotonPtOvM',
-     'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
+     #'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
      'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
-     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
+     #'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
      'subleadPhotonEn','subleadPhotonPt', 'subleadPhotonPtOvM',
      'subleadJetDiphoDPhi','subleadJetDiphoDEta',
      'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
      'subleadJetEn','subleadJetEta','subleadJetPhi',
-     'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
+     #'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
      'subsubleadJetMass',
-     'metPt','metPhi','metSumET',
+     #'metPt','metPhi','metSumET',
      'nSoftJets',
-     'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
-     'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
-     'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
-     'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
+     #'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
+     #'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
+     #'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
+     #'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
      ]
 
 train_vars.append('proc')
@@ -55,7 +55,7 @@ dataframes.append(pd.read_csv('2017/MC/DataFrames/VBF_VBF_BDT_df_2017.csv'))
 dataframes.append(pd.read_csv('2017/MC/DataFrames/VH_VBF_BDT_df_2017.csv'))
 dataframes.append(pd.read_csv('2017/MC/DataFrames/ttH_VBF_BDT_df_2017.csv'))
 dataframes.append(pd.read_csv('2017/MC/DataFrames/tHq_VBF_BDT_df_2017.csv', nrows = 254039))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/tHW_VBF_BDT_df_2017.csv', nrows = 130900)))
+dataframes.append(pd.read_csv('2017/MC/DataFrames/tHW_VBF_BDT_df_2017.csv', nrows = 130900))
 df = pd.concat(dataframes, sort=False, axis=0 )
 
 data = df[train_vars]
@@ -129,7 +129,7 @@ x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test
 
 #Before n_estimators = 100, maxdepth=4, gamma = 1
 #Improved n_estimators = 300, maxdepth = 7, gamme = 4
-clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=400, 
+clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=num_estimators, 
                             eta=0.1, maxDepth=6, min_child_weight=0.01, 
                             subsample=0.6, colsample_bytree=0.6, gamma=4,
                             num_class=4)
@@ -205,7 +205,7 @@ NNaccuracy = accuracy_score(y_true, y_pred)
 print(NNaccuracy)
 
 #Confusion Matrix
-cm = confusion_matrix(y_true=y_true,y_pred=y_pred)
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 
 #Confusion Matrix
 def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cmap=plt.cm.Blues):
@@ -244,12 +244,12 @@ def plot_output_score(data='output_score_qqh', density=False,):
     output_score_th = np.array(x_test_th[data])
 
     fig, ax = plt.subplots()
-    ax.hist(output_score_ggh, bins=50, label='ggH', histtype='step',weights=ggh_w)#,density=True) 
-    ax.hist(output_score_qqh, bins=50, label='qqH', histtype='step',weights=qqh_w) #density=True)
-    ax.hist(output_score_wh, bins=50, label='WH', histtype='step',weights=wh_w) #density=True) 
-    ax.hist(output_score_zh, bins=50, label='ZH', histtype='step',weights=zh_w) #density=True) 
-    ax.hist(output_score_tth, bins=50, label='ttH', histtype='step',weights=tth_w) #density=True)
-    ax.hist(output_score_th, bins=50, label='tH', histtype='step',weights=th_w) #density=True)
+    ax.hist(output_score_ggh, bins=50, label='ggH', histtype='step',weights=ggh_w, color = color[0])#,density=True) 
+    ax.hist(output_score_qqh, bins=50, label='qqH', histtype='step',weights=qqh_w, color = color[1]) #density=True)
+    ax.hist(output_score_wh, bins=50, label='WH', histtype='step',weights=wh_w, color = color[2]) #density=True) 
+    ax.hist(output_score_zh, bins=50, label='ZH', histtype='step',weights=zh_w, color = color[3]) #density=True) 
+    ax.hist(output_score_tth, bins=50, label='ttH', histtype='step',weights=tth_w, color = color[4]) #density=True)
+    ax.hist(output_score_th, bins=50, label='tH', histtype='step',weights=th_w, color = color[5]) #density=True)
     plt.legend()
     plt.title('Output Score')
     plt.ylabel('Fraction of Events')
@@ -258,8 +258,8 @@ def plot_output_score(data='output_score_qqh', density=False,):
     plt.savefig(name, dpi = 200)
 
 # DO COLOURS FOR PoP and ROC ! ! !
-
-def plot_performance_plot(cm=cm,labels=binNames):
+ 
+def plot_performance_plot(cm=cm,labels=binNames, color = color):
     #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
@@ -278,7 +278,7 @@ def plot_performance_plot(cm=cm,labels=binNames):
     for i in range(len(cm)):
         #ax.bar(labels, cm[:,i],label=labels[i],bottom=bottom)
         #bottom += np.array(cm[:,i])
-        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom) #,color=color[i])
+        ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom,color=color[i])
         bottom += np.array(cm[i,:])
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
@@ -290,7 +290,7 @@ def plot_performance_plot(cm=cm,labels=binNames):
     plt.savefig(name, dpi = 1200)
     plt.show()
 
-def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test):
+def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -315,7 +315,7 @@ def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_te
                 fpr_keras.sort()
                 tpr_keras.sort()
                 auc_test = auc(fpr_keras, tpr_keras)
-                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]))
+                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]), color = color[i])
     ax.legend(loc = 'lower right', fontsize = 'x-small')
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
@@ -343,6 +343,8 @@ def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values 
             print('saving: /plotting/BDT_plots/feature_importance_{0}.png'.format(i))
 
 plot_confusion_matrix(cm,binNames,normalize=True)
+plot_performance_plot()
+plot_roc_curve()
 
 plot_output_score(data='output_score_qqh')
 plot_output_score(data='output_score_ggh')
