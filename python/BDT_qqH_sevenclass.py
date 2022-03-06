@@ -52,7 +52,7 @@ map_def_2 = [
 ]
 
 #color = ['#f0700c', '#e03b04', '#eef522', '#8cad05', '#f5df87', '#6e0903', '#8c4503']
-color  = ['silver','indianred','coral','lightgreen','green','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
+color  = ['silver','indianred','salmon','lightgreen','seagreen','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
 
 binNames = ['qqH_Rest',
             'QQ2HQQ_GE2J_MJJ_60_120',
@@ -274,6 +274,10 @@ clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=num_estimators,
                             subsample=0.6, colsample_bytree=0.6, gamma=4,
                             num_class=4)
 
+clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
+                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
+                            subsample=0.6, colsample_bytree=0.6, gamma=4)
+
 #Equalizing weights
 train_w_df = pd.DataFrame()
 train_w = 300 * train_w # to make loss function O(1)
@@ -367,8 +371,8 @@ def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='
     plt.yticks(tick_marks,labels)
     if normalize:
         cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
-        for i in range(len(cm[0])):
-            for j in range(len(cm[1])):
+        for i in range(cm.shape[0]):
+            for j in range(cm.shape[1]):
                 cm[i][j] = float("{:.2f}".format(cm[i][j]))
     thresh = cm.max()/2.
     print(cm)
@@ -477,7 +481,6 @@ def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_
     plt.close()
 
 # Feature Importance
-
 def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values = False):
     if num_plots == 'single':
         plt.rcParams["figure.figsize"] = (12,7)
@@ -491,26 +494,41 @@ def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values 
         for i in imp_types:
             xgb.plot_importance(clf, max_num_features=num_feature, grid = False, height = 0.4, importance_type = imp_type, title = 'Feature importance ({})'.format(i), show_values = values, color ='blue')
             plt.tight_layout()
-            plt.savefig('/plotting/BDT_plots/BDT_qqH_sevenclass_feature_importance_{0}'.format(i), dpi = 1200)
-            print('saving: /plotting/BDT_plots/BDT_qqH_sevenclass_feature_importance_{0}'.format(i))
+            plt.savefig('plotting/BDT_plots/BDT_qqH_sevenclass_feature_importance_{0}'.format(i), dpi = 1200)
+            print('saving: plotting/BDT_plots/BDT_qqH_sevenclass_feature_importance_{0}'.format(i))
 
-feature_importance()
 
-exit(0)
-# ideas for further binary BDT for signal purification
-# so the y_pred is my new dataset basically - so y_pred is what it came as while y_test is what it should have been
-# I need to grab y_pred[i] which corresponds to one class - grab x_test[i] for it to be data from that and then everything from the train and split
-# make it according to y_pred[i] and make all of those your datasets - and repeat then
-# and at the end you need to join everything again to one big thing maybe
-# holly shit okay lessgo
+#plot_confusion_matrix(cm,binNames,normalize=True)
+#plot_performance_plot()
+#plot_roc_curve()
+#feature_importance()
+#print('BDT_qqH_sevenclass: ', NNaccuracy)
+"""
+plot_output_score(data='output_score_qqh1')
+plot_output_score(data='output_score_qqh2')
+plot_output_score(data='output_score_qqh3')
+plot_output_score(data='output_score_qqh4')
+plot_output_score(data='output_score_qqh5')
+plot_output_score(data='output_score_qqh6')
+plot_output_score(data='output_score_qqh7')
+"""
+#exit(0)
 
+# ------------------------ 
 # Binary BDT for signal purity
+# okayy lessgooo
 
 data_new = x_test.copy()  
-data_new['proc_true'] = proc_arr_test   # the true labels
-data_new['weights'] = test_w 
+data_new = data_new.drop(columns = ['output_score_qqh1','output_score_qqh2', 'output_score_qqh3', 'output_score_qqh4',
+                                    'output_score_qqh5', 'output_score_qqh6', 'output_score_qqh7'])
+# data_new['proc']  # are the true labels
+# data_new['weight'] are the weights
 
-signal = ['qqH_rest'] # signal = binNames  # list of signals
+#signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
+#            'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
+#            'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25', 'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200']
+signal = ['qqH_rest'] # for debugging
+conf_matrix = np.zeros((2,1)) # for the final confusion matrix
 
 for i in range(len(signal)):
     # now i want to get the predicted labels
@@ -520,14 +538,14 @@ for i in range(len(signal)):
             proc_pred.append(signal[i])
         else:
             proc_pred.append('background')
-    data_new['proc_pred'] = proc_pred   
+    data_new['proc_pred'] = proc_pred       # I assume it will re-write this column
 
     # now cut down the dataframe to the predicted ones -  this is the split for the different dataframes
     data_new = data_new[data_new.proc_pred == signal[i]] 
 
-    # now from proc_true make signal against background (binary classifier)
+    # now from proc make signal against background (binary classifier)
 
-    proc_true = np.array(data_new['proc_true'])
+    proc_true = np.array(data_new['proc'])
     y_train_labels_num = []
     y_train_labels = []
     for j in range(len(proc_true)):
@@ -539,52 +557,50 @@ for i in range(len(signal)):
             y_train_labels_num.append(0)
     y_train_labels = np.array(y_train_labels)
     y_train_labels_num = np.array(y_train_labels_num)
-    weights = np.array(data_new['weights'])
+    weights = np.array(data_new['weight'])
 
+    data_new = data_new.drop(columns=['weight'])
     data_new = data_new.drop(columns=['proc'])
-    data_new = data_new.drop(columns=['proc_true'])
     data_new = data_new.drop(columns=['proc_pred'])
 
     # the new split
-    x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test = train_test_split(data_new, y_train_labels_num, weights, y_train_labels, test_size = test_split, shuffle = True)
+    x_train_2, x_test_2, y_train_2, y_test_2, train_w_2, test_w_2, proc_arr_train_2, proc_arr_test_2 = train_test_split(data_new, y_train_labels_num, weights, y_train_labels, test_size = test_split, shuffle = True)
 
     print (' Training classifier with Signal = ', signal[i])
-    clf = clf.fit(x_train, y_train, sample_weight=train_w)
-    print ('Finished Training classifier!')
+    clf_2 = clf_2.fit(x_train_2, y_train_2, sample_weight=train_w_2)
+    print (' Finished classifier with Signal = ', signal[i])
 
-    y_pred_test = clf.predict_proba(x_test)
-    y_pred = y_pred_test.argmax(axis=1)
-    
-    cm_2 = confusion_matrix(y_true = y_test, y_pred = y_pred, sample_weight = test_w)
-    name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Confusion_Matrix_' + signal[i]
-    label_array = [signal[i], 'background']
-    plot_confusion_matrix(cm = cm_2,classes = label_array,labels = label_array, name = name)
+    y_pred_test_2 = clf_2.predict_proba(x_test_2)
+    y_pred_2 = y_pred_test_2.argmax(axis=1)
+    #exit(0)
+    cm_2 = confusion_matrix(y_true = y_test_2, y_pred = y_pred_2, sample_weight = test_w_2)  # WHY IS THIS GIVING ONE NUMBER INSTEAD OF A 2x2 MATRIX ??????
+    #exit(0)
+    # normalization will happen inside the plot of performance function
+    #cm_2 = cm_2.astype('float')/cm_2.sum(axis=0)[np.newaxis,:]  # normalizing according to predicted label
+    #for i in range(cm_2.shape[0]):
+    #    for j in range(cm_2.shape[1]):
+    #        cm_2[i][j] = float("{:.3f}".format(cm_2[i][j]))
+    print('cm_2: ', cm_2)
+
+    # grabbing predicted label column
+    col_sig = cm_2[:,0]
+    conf_matrix = np.vstack((conf_matrix, col_sig)) # WHY ISNT THIS WORKING AS WELL !!!!!!!!!
+
+
+    #conf_matrix = np.concatenate((conf_matrix, col_sig), axis = 1)
+
+    #name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Confusion_Matrix_' + signal[i]
+    #label_array = [signal[i], 'background']
+    #plot_confusion_matrix(cm = cm_2,classes = label_array,labels = label_array, name = name, normalize = False)
     #name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Performance_Plot_' + signal[i]
     #plot_performance_plot(cm=cm_2,labels=signal, normalize = True, color = color, name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Performance_Plot')
 
-    # LET ME CHECK THIS 
+print('conf_matrix: ', conf_matrix)
+conf_matrix = conf_matrix[:,1:] # to get rid of the zeros in the beginning
+print('conf_matrix: ', conf_matrix)
 
-    # keep going now
+# now to make our final plot of performance
+plot_performance_plot(cm = conf_matrix,labels = signal, name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Performance_Plot_final')
 
-    # will have to put everything together all of them together .....
     
-exit(0)
 
-plot_confusion_matrix(cm,binNames,normalize=True)
-
-plot_performance_plot()
-
-plot_roc_curve()
-
-print('BDT_qqH_sevenclass: ', NNaccuracy)
-
-
-"""
-plot_output_score(data='output_score_qqh1')
-plot_output_score(data='output_score_qqh2')
-plot_output_score(data='output_score_qqh3')
-plot_output_score(data='output_score_qqh4')
-plot_output_score(data='output_score_qqh5')
-plot_output_score(data='output_score_qqh6')
-plot_output_score(data='output_score_qqh7')
-"""
