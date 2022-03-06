@@ -583,8 +583,8 @@ for i in range(len(signal)):
     print('cm_2: ', cm_2)
 
     # grabbing predicted label column
-    col_sig = cm_2[:,0]
-    conf_matrix = np.vstack((conf_matrix, col_sig)) # WHY ISNT THIS WORKING AS WELL !!!!!!!!!
+    col_sig = np.vstack((cm_2[:,0]))
+    conf_matrix = np.concatenate((conf_matrix, col_sig), axis = 1)
 
 
     #conf_matrix = np.concatenate((conf_matrix, col_sig), axis = 1)
