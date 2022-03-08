@@ -272,7 +272,7 @@ x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test
 clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=num_estimators, 
                             eta=0.1, maxDepth=6, min_child_weight=0.01, 
                             subsample=0.6, colsample_bytree=0.6, gamma=4,
-                            num_class=4)
+                            num_class=7)
 
 clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
                             eta=0.1, maxDepth=6, min_child_weight=0.01, 
@@ -445,7 +445,7 @@ def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = col
     plt.savefig(name, dpi = 1200)
     plt.show()
 
-def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
+def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color, name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_ROC_curve'):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -475,7 +475,6 @@ def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
     ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
-    name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_ROC_curve'
     plt.savefig(name, dpi = 1200)
     print("Plotting ROC Curve")
     plt.close()
@@ -498,9 +497,9 @@ def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values 
             print('saving: plotting/BDT_plots/BDT_qqH_sevenclass_feature_importance_{0}'.format(i))
 
 
-#plot_confusion_matrix(cm,binNames,normalize=True)
-#plot_performance_plot()
-#plot_roc_curve()
+#plot_confusion_matrix(cm,binNames,normalize=True, name = 'plotting/BDT_plots/TEST_1')
+#plot_performance_plot(name = 'plotting/BDT_plots/TEST_2')
+#plot_roc_curve(name = 'plotting/BDT_plots/TEST_3')
 #feature_importance()
 #print('BDT_qqH_sevenclass: ', NNaccuracy)
 """
@@ -518,19 +517,19 @@ plot_output_score(data='output_score_qqh7')
 # Binary BDT for signal purity
 # okayy lessgooo
 
-data_new = x_test.copy()  
-data_new = data_new.drop(columns = ['output_score_qqh1','output_score_qqh2', 'output_score_qqh3', 'output_score_qqh4',
-                                    'output_score_qqh5', 'output_score_qqh6', 'output_score_qqh7'])
 # data_new['proc']  # are the true labels
 # data_new['weight'] are the weights
 
 #signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
 #            'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
 #            'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25', 'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200']
-signal = ['qqH_rest'] # for debugging
+signal = ['QQ2HQQ_GE2J_MJJ_60_120'] # for debugging
 conf_matrix = np.zeros((2,1)) # for the final confusion matrix
 
 for i in range(len(signal)):
+    data_new = x_test.copy()  
+    data_new = data_new.drop(columns = ['output_score_qqh1','output_score_qqh2', 'output_score_qqh3', 'output_score_qqh4',
+                                        'output_score_qqh5', 'output_score_qqh6', 'output_score_qqh7'])
     # now i want to get the predicted labels
     proc_pred = []      
     for j in range(len(y_pred_0)):
@@ -558,7 +557,8 @@ for i in range(len(signal)):
     y_train_labels = np.array(y_train_labels)
     y_train_labels_num = np.array(y_train_labels_num)
     weights = np.array(data_new['weight'])
-
+    exit(0)
+    
     data_new = data_new.drop(columns=['weight'])
     data_new = data_new.drop(columns=['proc'])
     data_new = data_new.drop(columns=['proc_pred'])
@@ -570,8 +570,9 @@ for i in range(len(signal)):
     clf_2 = clf_2.fit(x_train_2, y_train_2, sample_weight=train_w_2)
     print (' Finished classifier with Signal = ', signal[i])
 
-    y_pred_test_2 = clf_2.predict_proba(x_test_2)
+    y_pred_test_2 = clf_2.predict_proba(x_test_2)  #  FIXME THERE IS SOMETHING  WRONG HERE 
     y_pred_2 = y_pred_test_2.argmax(axis=1)
+    #y_pred_2 = y_pred_test_2
     #exit(0)
     cm_2 = confusion_matrix(y_true = y_test_2, y_pred = y_pred_2, sample_weight = test_w_2)  # WHY IS THIS GIVING ONE NUMBER INSTEAD OF A 2x2 MATRIX ??????
     #exit(0)
@@ -583,7 +584,7 @@ for i in range(len(signal)):
     print('cm_2: ', cm_2)
 
     # grabbing predicted label column
-    col_sig = np.vstack((cm_2[:,0]))
+    col_sig = np.vstack((cm_2[:,0]))   # FIXME need to check which column is the signal acutally
     conf_matrix = np.concatenate((conf_matrix, col_sig), axis = 1)
 
 
