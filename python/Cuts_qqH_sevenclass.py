@@ -40,7 +40,7 @@ map_def_2 = [
 ['ZH',400,401,402,403,404,405],
 ]
 
-color  = ['silver','indianred','yellowgreen','lightgreen','green','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
+color  = ['silver','indianred','salmon','lightgreen','seagreen','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
 
 binNames = ['qqH_Rest',
             'QQ2HQQ_GE2J_MJJ_60_120',
@@ -361,16 +361,6 @@ plot_confusion_matrix(cm,binNames,normalize=True)
 plot_performance_plot(cm, binNames,normalize = True)
 
 print('Cuts_qqH_sevenclass: ', NNaccuracy)
-
-
-
-# what I need to do
-# qqH - 7 class cuts: to have a dataframe with only qqH [qqH proc from 1.2 and proc_new - our predictions from cuts] + subsub - yes
-# qqH - 7class NN and BDT - yes
-# confusion matrices of qqH 7-class NN, BDT, cuts - yes
-# check labeling - fixed this
-
-# inform Philipp about everything
 
 
 
