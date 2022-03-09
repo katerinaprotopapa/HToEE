@@ -214,13 +214,31 @@ data['njets'] = njets
 # manually setting cuts
 njets = np.array(data['njets'])
 diphotonpt = np.array(data['diphotonPt'])
+leadElectronPt = np.array(data['leadElectronPt'])
+leadMuonPt = np.array(data['leadMuonPt'])
+subleadElectronPt = np.array(data['subleadElectronPt'])
+subleadMuonPt = np.array(data['subleadMuonPt'])
 
-# FIXME nleptons 
+# creating n-leptons variable
+nleptons = []
+num_leptons = 0
+for i in range(data.shape[0]):
+    if leadElectronPt[i] != -999.0 or leadMuonPt[i] != -999.0:
+        if subleadElectronPt[i] != -999.0 or subleadMuonPt[i] != -999:
+            num_leptons = 2
+        else:
+            num_leptons = 1
+    else:
+        num_leptons = 0
+    nleptons.append(num_leptons)
+data['njets'] = nleptons
+print('Done 2')
 
 proc = []
 y_train_labels_num_pred = []
-for i in range(len(stage_1_2)):
-    if stage_1_2[i] == 300 or stage_1_2[i] == 301 or stage_1_2[i] == 302 or stage_1_2[i] == 303 or stage_1_2[i] == 304 or stage_1_2[i] == 305: # FIXME NLEPTONS
+for i in range(data.shape[0]):
+    #if stage_1_2[i] == 300 or stage_1_2[i] == 301 or stage_1_2[i] == 302 or stage_1_2[i] == 303 or stage_1_2[i] == 304 or stage_1_2[i] == 305: # FIXME NLEPTONS
+    if nleptons[i] == 1:                        # WH
         if diphotonpt[i] < 75:
             proc_value = 'QQ2HLNU_PTV_0_75'
             proc_value_num = 0
@@ -237,7 +255,8 @@ for i in range(len(stage_1_2)):
         elif diphotonpt[i] >= 250:
             proc_value = 'QQ2HLNU_PTV_75_150'
             proc_value_num = 4
-    if stage_1_2[i] == 400 or stage_1_2[i] == 401 or stage_1_2[i] == 402 or stage_1_2[i] == 403 or stage_1_2[i] == 404 or stage_1_2[i] == 405: # FIXME NLEPTONS
+    #if stage_1_2[i] == 400 or stage_1_2[i] == 401 or stage_1_2[i] == 402 or stage_1_2[i] == 403 or stage_1_2[i] == 404 or stage_1_2[i] == 405: # FIXME NLEPTONS
+    if nleptons[i] == 0 or nleptons[i] == 2:  # ZH
         print('HIIIII BITCHEEEES OMG WORK ')
         if diphotonpt[i] < 75:
             proc_value = 'QQ2HLL_PTV_0_75'
