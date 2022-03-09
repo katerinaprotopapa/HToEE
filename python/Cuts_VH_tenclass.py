@@ -2,31 +2,15 @@ import argparse
 import pandas as pd
 import numpy as np
 import matplotlib
+import xgboost as xgb
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import glob
-import pickle
-import ROOT as r
-r.gROOT.SetBatch(True)
-import sys
-from os import path, system
-from array import array
-from root_numpy import tree2array, fill_hist
-from math import pi
-import math
-import h5py
-from itertools import product
-from sklearn.metrics import accuracy_score, log_loss, confusion_matrix, roc_curve, auc, roc_auc_score
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
-from keras.models import Sequential 
-from keras.initializers import RandomNormal 
-from keras.layers import Dense, Activation, Flatten
-from keras.optimizers import Nadam, adam, Adam
-from keras.regularizers import l2 
-from keras.callbacks import EarlyStopping 
+import pickle
+from itertools import product
 from keras.utils import np_utils 
-from keras.metrics import categorical_crossentropy, binary_crossentropy
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score, auc
 
 map_def_2 = [
 ['QQ2HQQ_FWDH',200],
@@ -231,7 +215,7 @@ for i in range(data.shape[0]):
     else:
         num_leptons = 0
     nleptons.append(num_leptons)
-data['njets'] = nleptons
+data['nleptons'] = nleptons
 print('Done 2')
 
 proc = []
@@ -257,7 +241,7 @@ for i in range(data.shape[0]):
             proc_value_num = 4
     #if stage_1_2[i] == 400 or stage_1_2[i] == 401 or stage_1_2[i] == 402 or stage_1_2[i] == 403 or stage_1_2[i] == 404 or stage_1_2[i] == 405: # FIXME NLEPTONS
     if nleptons[i] == 0 or nleptons[i] == 2:  # ZH
-        print('HIIIII BITCHEEEES OMG WORK ')
+        #print('HIIIII BITCHEEEES OMG WORK ')
         if diphotonpt[i] < 75:
             proc_value = 'QQ2HLL_PTV_0_75'
             proc_value_num = 5
@@ -287,15 +271,27 @@ y_pred_old = data['proc_new']
 y_true = y_train_labels_num
 y_pred = y_train_labels_num_pred
 
-print 'Accuracy score: '
-NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = weights)
-print(NNaccuracy)
-
 #cm_old = confusion_matrix(y_true=y_true,y_pred=y_pred)
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred,sample_weight=weights)
 #cm_new = np.zeros((len(binNames),len(binNames)),dtype=int)
 #for i in range(len(y_true)):
 #    cm_new[y_true[i]][y_pred[i]] += 1
+
+# Accuracy Score
+print 'Accuracy score: '
+NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = weights)
+print(NNaccuracy)
+
+num_correct = 0
+num_all = 0
+for i in range(cm.shape[0]):
+    for j in range(cm.shape[1]):
+        num_all += cm[i][j]
+        if i == j:     # so diagonal
+            num_correct += cm[i][j]
+
+accuracy = num_correct / num_all
+print('Final Accuracy Score: ', accuracy)
 
 
 #Confusion Matrix
@@ -391,6 +387,140 @@ def plot_roc_curve(binNames = binNames, y_test = y_train_labels_num, y_pred_test
 #y_test not correct yet, need to check this again
 #plot_roc_curve(y_test=y_train_labels_num,y_pred_test=y_pred,x_test=data)
 
-plot_performance_plot()
+#plot_performance_plot()
 
-plot_confusion_matrix(cm,binNames,normalize=True)
+#plot_confusion_matrix(cm,binNames,normalize=True)
+
+
+# ------------------------ 
+# Binary BDT for signal purity
+# okayy lessgooo
+
+# data_new['proc']  # are the true labels
+# data_new['weight'] are the weights
+
+num_estimators = 100
+test_split = 0.15
+
+clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
+                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
+                            subsample=0.6, colsample_bytree=0.6, gamma=4)
+
+signal = binNames
+#signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120'] # for debugging
+#conf_matrix = np.zeros((2,1)) # for the final confusion matrix
+conf_matrix_w = np.zeros((2,len(signal)))
+conf_matrix_no_w = np.zeros((2,len(signal)))
+
+for i in range(len(signal)):
+    data_new = data.copy()  
+    # now i want to get the predicted labels
+    proc_pred = []      
+    for j in range(len(y_pred)):
+        if(y_pred[j] == i): # so that the predicted label is the signal
+            proc_pred.append(signal[i])
+        else:
+            proc_pred.append('background')
+    data_new['proc_pred'] = proc_pred    
+
+    #exit(0)
+
+    # now cut down the dataframe to the predicted ones -  this is the split for the different dataframes
+    data_new = data_new[data_new.proc_pred == signal[i]] 
+
+    # now from proc make signal against background (binary classifier)
+
+    proc_true = np.array(data_new['proc_original'])
+    y_train_labels_num = []
+    y_train_labels = []
+    for j in range(len(proc_true)):
+        if proc_true[j] == signal[i]:
+            y_train_labels.append(signal[i])
+            y_train_labels_num.append(1)
+        else: 
+            y_train_labels.append('background')
+            y_train_labels_num.append(0)
+    y_train_labels = np.array(y_train_labels)
+    y_train_labels_num = np.array(y_train_labels_num)
+    
+    weights_new = np.array(data_new['weight'])
+
+    
+    data_new = data_new.drop(columns=['weight'])
+    data_new = data_new.drop(columns=['proc_original'])
+    data_new = data_new.drop(columns=['proc_pred'])
+    data_new = data_new.drop(columns=['proc_new'])
+
+    # the new split
+    x_train_2, x_test_2, y_train_2, y_test_2, train_w_2, test_w_2, proc_arr_train_2, proc_arr_test_2 = train_test_split(data_new, y_train_labels_num, weights_new, y_train_labels, test_size = test_split, shuffle = True)
+
+    train_w_df = pd.DataFrame()
+    train_w = 300 * train_w_2 # to make loss function O(1)
+    train_w_df['weight'] = train_w
+    train_w_df['proc'] = proc_arr_train_2
+    signal_sum_w = train_w_df[train_w_df['proc'] == signal[i]]['weight'].sum()
+    background_sum_w = train_w_df[train_w_df['proc'] == 'background']['weight'].sum()
+
+    train_w_df.loc[train_w_df.proc == 'background','weight'] = (train_w_df[train_w_df['proc'] == 'background']['weight'] * signal_sum_w / background_sum_w)
+    train_w_new = np.array(train_w_df['weight'])
+
+    print (' Training classifier with Signal = ', signal[i])
+    clf_2 = clf_2.fit(x_train_2, y_train_2, sample_weight=train_w_new)
+    print (' Finished classifier with Signal = ', signal[i])
+
+    y_pred_test_2 = clf_2.predict_proba(x_test_2) 
+    y_pred_2 = y_pred_test_2.argmax(axis=1)
+
+    cm_2 = confusion_matrix(y_true = y_test_2, y_pred = y_pred_2, sample_weight = test_w_2)  #weights result in decimal values <1 so not sure if right
+    cm_2_no_weights = confusion_matrix(y_true = y_test_2, y_pred = y_pred_2)
+
+    #print('cm_2:')
+    #print(cm_2)
+
+    # grabbing predicted label column
+    #norm = cm_2[0][1] + cm_2[1][1]
+    #conf_matrix[0][i] = (cm_2[0][1])/norm
+    #conf_matrix[1][i] = (cm_2[1][1])/norm
+
+    conf_matrix_w[0][i] = cm_2[0][1]
+    conf_matrix_w[1][i] = cm_2[1][1]
+    conf_matrix_no_w[0][i] = cm_2_no_weights[0][1]
+    conf_matrix_no_w[1][i] = cm_2_no_weights[1][1]
+
+print('Final conf_matrix:')
+print(conf_matrix_w)
+
+#Need a new function beause the cm structure is different
+def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = color, name = 'plotting/Cuts/Cuts_VH_Tenclass_Performance_Plot_final'):
+    cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
+    for i in range(len(cm[0])):
+        for j in range(len(cm[:,1])):
+            cm[j][i] = float("{:.3f}".format(cm[j][i]))
+    cm = np.array(cm)
+    fig, ax = plt.subplots(figsize = (10,10))
+    plt.rcParams.update({
+    'font.size': 9})
+    tick_marks = np.arange(len(labels))
+    plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
+    bottom = np.zeros(len(labels))
+    ax.bar(labels, cm[1,0],label='Signal',bottom=bottom,color=color[1])
+    bottom += np.array(cm[1,:])
+    ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color=color[0])
+    plt.legend()
+    current_bottom, current_top = ax.get_ylim()
+    ax.set_ylim(bottom=0, top=current_top*1.3)
+    plt.ylabel('Fraction of events', size = 12)
+    ax.set_xlabel('Events',size=12)
+    plt.tight_layout()
+    plt.savefig(name, dpi = 1200)
+    plt.show()
+# now to make our final plot of performance
+plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/Cuts/Cuts_VH_Tenclass_Performance_Plot_final')
+
+num_false = np.sum(conf_matrix_w[0,:])
+num_correct = np.sum(conf_matrix_w[1,:])
+accuracy = num_correct / (num_correct + num_false)
+print('Cuts Final Accuracy Score:')
+print(accuracy)
+
+
