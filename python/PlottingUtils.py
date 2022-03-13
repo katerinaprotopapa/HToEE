@@ -500,7 +500,7 @@ class Plotter(object):
 
             auc_keras_test_BDT = roc_auc_score(y_test, y_pred_test)
             axes.plot(bkg_eff_test, sig_eff_test, color='blue', label='BDT (area = %0.4f)'%auc_keras_test_BDT)
-
+ 
         if dijetcentrality_bool:
             dijet_vbf = np.loadtxt('models/ROC_curve_VBF.csv', delimiter=',')
             dijet_ggh = np.loadtxt('models/ROC_curve_ggH.csv', delimiter=',')

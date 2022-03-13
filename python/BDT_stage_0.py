@@ -14,13 +14,15 @@ from keras.utils import np_utils
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
 
 #Define key quantities, use to tune BDT
-num_estimators = 300
+num_estimators = 1
 test_split = 0.15
 learning_rate = 0.001
 
 map_def = [['ggH',10,11],['qqH',20,21,22,23],['VH',30,31,40,41],['ttH',60,61],['tH',80,81]]
 
 binNames = ['ggH','qqH','VH','ttH','tH'] 
+labelNames = ['ggH','qqH','VH leptonic','ttH','tH']
+color = ['#54aaf8', '#f08633', '#1fcf57', '#cf1f9f', 'gold']
 bins = 50
 
 train_vars = ['diphotonMass', 'diphotonPt', 'diphotonEta',
@@ -125,7 +127,7 @@ x_train, x_test, y_train, y_test, train_w, test_w, proc_arr_train, proc_arr_test
 #Improved n_estimators = 300, maxdepth = 7, gamme = 4
 # Current best compbination of HP values:, 300, 0.01, 6)
 
-clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=200, 
+clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=num_estimators, 
                             eta=0.01, maxDepth=6, min_child_weight=0.01, 
                             subsample=0.6, colsample_bytree=0.6, gamma=4,
                             num_class=5)
@@ -221,7 +223,7 @@ def plot_performance_plot(cm=cm,labels=binNames, color = color):
     plt.show()
 
 
-def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
+def plot_roc_curve(binNames = binNames, labelNames = labelNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -245,17 +247,17 @@ def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_te
                 fpr_keras.sort()
                 tpr_keras.sort()
                 auc_test = auc(fpr_keras, tpr_keras)
-                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]), color = color[i])
+                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), labelNames[i]), color = color[i])
     ax.legend(loc = 'lower right', fontsize = 'x-small')
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
     ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
-    name = 'plotting/NN_plots/NN_stage_0_ROC_curve'
+    name = 'plotting/BDT_plots/BDT_stage_0_ROC_curve'
     plt.savefig(name, dpi = 1200)
     print("Plotting ROC Curve")
     plt.close()
 
-plot_confusion_matrix(cm,binNames,normalize=True)
+plot_confusion_matrix(cm,labelNames,normalize=True)
 
 plot_performance_plot()
 

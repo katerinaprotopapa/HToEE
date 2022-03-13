@@ -365,8 +365,8 @@ def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = col
     plt.show()
 
 
-plot_confusion_matrix(cm,binNames,normalize=True)
-plot_performance_plot()
+#plot_confusion_matrix(cm,binNames,normalize=True)
+#plot_performance_plot()
 
 print('Cuts_qqH_sevenclass: ', NNaccuracy)
 print('Cuts Final Accuracy Score with qqH rest: ', accuracy)
@@ -381,7 +381,7 @@ print('Cuts Final Accuracy Score without qqH rest: ', accuracy_2)
 # data_new['proc']  # are the true labels
 # data_new['weight'] are the weights
 
-num_estimators = 50
+num_estimators = 1
 test_split = 0.15
 
 clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
@@ -394,6 +394,7 @@ signal = binNames
 conf_matrix_w = np.zeros((2,len(signal)))
 conf_matrix_no_w = np.zeros((2,len(signal)))
 
+fig, ax = plt.subplots()
 for i in range(len(signal)):
     data_new = data.copy()  
     # now i want to get the predicted labels
@@ -469,6 +470,30 @@ for i in range(len(signal)):
     conf_matrix_no_w[0][i] = cm_2_no_weights[0][1]
     conf_matrix_no_w[1][i] = cm_2_no_weights[1][1]
 
+    # ROC Curve
+    sig_y_test  = np.where(y_test_2==1, 1, 0)
+    #sig_y_test  = y_test_2
+    y_pred_test_array = y_pred_test_2[:,1] # to grab the signal
+    fpr_keras, tpr_keras, thresholds_keras = roc_curve(sig_y_test, y_pred_test_array, sample_weight = test_w_2)
+    fpr_keras.sort()
+    tpr_keras.sort()
+    name_fpr = 'csv_files/Cuts_binary_fpr_' + signal[i]
+    name_tpr = 'csv_files/Cuts_binary_tpr_' + signal[i]
+    np.savetxt(name_fpr, fpr_keras, delimiter = ',')
+    np.savetxt(name_tpr, tpr_keras, delimiter = ',')
+    auc_test = auc(fpr_keras, tpr_keras)
+    ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), labelNames[i]), color = color[i])
+
+ax.legend(loc = 'lower right', fontsize = 'small')
+ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
+ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
+ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
+plt.tight_layout()
+name = 'plotting/Cuts/Cuts_qqH_binary_Multi_ROC_curve'
+plt.savefig(name, dpi = 1200)
+print("Plotting ROC Curve")
+plt.close()
+
 print('Final conf_matrix:')
 print(conf_matrix_w)
 
@@ -497,7 +522,7 @@ def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = colo
     plt.savefig(name, dpi = 1200)
     plt.show()
 # now to make our final plot of performance
-plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot_final')
+#plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot_final')
 
 num_false = np.sum(conf_matrix_w[0,:])
 num_correct = np.sum(conf_matrix_w[1,:])

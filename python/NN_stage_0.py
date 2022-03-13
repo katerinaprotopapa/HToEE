@@ -41,6 +41,7 @@ map_def = [['ggH',10,11],['qqH',20,21,22,23],['VH',30,31,40,41],['ttH',60,61],['
 
 epochs = np.linspace(1,num_epochs,num_epochs,endpoint=True).astype(int) #For plotting
 binNames = ['ggH','qqH','VH','ttH','tH'] 
+labelNames = ['ggH','qqH','VH leptonic','ttH','tH']
 color = ['#54aaf8', '#f08633', '#8bfa71', '#ea3cf7', '#fef050']
 bins = 50
 
@@ -209,7 +210,7 @@ output_score_tth = np.array(y_pred_test[:,3])
 output_score_th = np.array(y_pred_test[:,4])
 
 x_test_ggh = x_test[x_test['proc'] == 'ggH']
-x_test_vbf = x_test[x_test['proc'] == 'VBF']
+x_test_vbf = x_test[x_test['proc'] == 'qqH']
 x_test_vh = x_test[x_test['proc'] == 'VH']
 x_test_tth = x_test[x_test['proc'] == 'ttH']
 x_test_th = x_test[x_test['proc'] == 'tH']
@@ -265,8 +266,8 @@ def plot_output_score(data='output_score_qqh', density=False,):
 
     fig, ax = plt.subplots()
     ax.hist(output_score_ggh, bins=50, label='ggH', histtype='step',weights=ggh_w)#,density=True) 
-    ax.hist(output_score_qqh, bins=50, label='VBF', histtype='step',weights=vbfh_w) #density=True)
-    ax.hist(output_score_vh, bins=50, label='VH', histtype='step',weights=vh_w) #density=True) 
+    ax.hist(output_score_vbf, bins=50, label='qqH', histtype='step',weights=vbfh_w) #density=True)
+    ax.hist(output_score_vh, bins=50, label='VH leptonic', histtype='step',weights=vh_w) #density=True) 
     ax.hist(output_score_tth, bins=50, label='ttH', histtype='step',weights=tth_w) #density=True)
     ax.hist(output_score_th, bins=50, label='tH', histtype='step',weights=th_w) #density=True)
     plt.legend()
@@ -310,10 +311,10 @@ def plot_loss():
 
 #Confusion Matrix
 def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cmap=plt.cm.Blues):
-    fig, ax = plt.subplots(figsize = (10,10))
+    fig, ax = plt.subplots(figsize = (8,8))
     #plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks,classes,rotation=90)
+    plt.xticks(tick_marks,classes,rotation=45)
     plt.yticks(tick_marks,classes)
     if normalize:
         cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
@@ -333,26 +334,27 @@ def plot_confusion_matrix(cm,classes,normalize=True,title='Confusion matrix',cma
     name = 'plotting/NN_plots/NN_stage_0_Confusion_Matrix'
     fig.savefig(name, dpi = 1200)
 
-def plot_performance_plot(cm=cm,labels=binNames, normalize = True, color = color):
+def plot_performance_plot(cm=cm,labels=binNames, color = color):
     #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
         for j in range(len(cm[1])):
             cm[i][j] = float("{:.3f}".format(cm[i][j]))
+    print(cm)
     cm = np.array(cm)
-    fig, ax = plt.subplots(figsize = (12,12))
+    #fig, ax = plt.subplots(figsize = (12,12))
+    fig, ax = plt.subplots()
     plt.rcParams.update({
-    'font.size': 9}) 
+    'font.size': 12})
     tick_marks = np.arange(len(labels))
     plt.xticks(tick_marks,labels,rotation=90)
+    #color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104'] - ugly
     bottom = np.zeros(len(labels))
-    #color = ['#24b1c9','#e36b1e','#1eb037','#c21bcf','#dbb104'] #ugly
-    #color = ['#54aaf8', '#f08633', '#8bfa71', '#ea3cf7', '#fef050']
     for i in range(len(cm)):
-        #ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom)
-        #bottom += np.array(cm[i,:])
+        #ax.bar(labels, cm[:,i],label=labels[i],bottom=bottom)
+        #bottom += np.array(cm[:,i])
         ax.bar(labels, cm[i,:],label=labels[i],bottom=bottom,color=color[i])
-        bottom += np.array(cm[i,:])
+        bottom += np.array(cm[i,:]) 
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
@@ -363,7 +365,8 @@ def plot_performance_plot(cm=cm,labels=binNames, normalize = True, color = color
     plt.savefig(name, dpi = 1200)
     plt.show()
 
-def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
+
+def plot_roc_curve(binNames = binNames, labelNames = labelNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -387,7 +390,7 @@ def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_te
                 fpr_keras.sort()
                 tpr_keras.sort()
                 auc_test = auc(fpr_keras, tpr_keras)
-                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), binNames[i]), color = color[i])
+                ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), labelNames[i]), color = color[i])
     ax.legend(loc = 'lower right', fontsize = 'x-small')
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
@@ -397,7 +400,7 @@ def plot_roc_curve(binNames = binNames, y_test = y_test, y_pred_test = y_pred_te
     print("Plotting ROC Curve")
     plt.close()
 
-plot_confusion_matrix(cm,binNames,normalize=True)
+plot_confusion_matrix(cm,labelNames,normalize=True)
 
 plot_performance_plot()
 

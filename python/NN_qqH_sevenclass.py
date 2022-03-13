@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 import numpy as np
+import xgboost as xgb
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -43,7 +44,7 @@ viridis = cm.get_cmap('viridis', 8)
 #learning_rate = 0.001
 
 #Optimized according to 4class
-num_epochs = 40
+num_epochs = 1
 batch_size = 64
 test_split = 0.2
 val_split = 0.1
@@ -90,7 +91,7 @@ epochs = np.linspace(1,num_epochs,num_epochs,endpoint=True).astype(int) #For plo
 #'QQ2HQQ_0J','QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
 #'QQ2HQQ_GE2J_MJJ_0_60','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_FWDH','ZH','WH','ttH','tH'] 
 #color = ['#f5df87', '#e03b04', '#eef522', '#8cad05', '#f0700c', '#6e0903', '#8c4503']
-color  = ['silver','indianred','yellowgreen','lightgreen','green','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
+color  = ['silver','indianred','salmon','lightgreen','seagreen','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
 binNames = ['qqH_Rest',
             'QQ2HQQ_GE2J_MJJ_60_120',
             'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
@@ -374,6 +375,7 @@ train_w = np.array(train_w_df['weight'])
 history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2, validation_split = val_split, callbacks=[callback_lr])
 
 # Output Score
+y_pred_0 = model.predict(x_test)
 y_pred_test = model.predict_proba(x=x_test)
 x_test['proc'] = proc_arr_test
 x_test['weight'] = test_w
@@ -423,15 +425,40 @@ qqh6_w2 = x_test_qqh7['weight']
 # stack the weights 
 #weights_array = np.stack((qqh1_w, qqh2_w, qqh3_w, qqh4_w, qqh5_w, qqh6_w, qqh7_w), axis = -1)
 
-#Accuracy Score
 y_pred = y_pred_test.argmax(axis=1)
 y_true = y_test.argmax(axis=1)
+
+#Confusion Matrix
+cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
+
+#Accuracy Score
+#y_pred = y_pred_test.argmax(axis=1)
+#y_true = y_test.argmax(axis=1)
 print 'Accuracy score: '
 NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = test_w)
 print(NNaccuracy)
 
-#Confusion Matrix
-cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
+num_correct = 0
+num_all = 0
+for i in range(cm.shape[0]):
+    for j in range(cm.shape[1]):
+        num_all += cm[i][j]
+        if i == j:     # so diagonal
+            num_correct += cm[i][j]
+
+accuracy = num_correct / num_all
+print('Final Accuracy Score with qqH rest: ', accuracy)
+
+num_correct_2 = 0
+num_all_2 = 0
+for i in range(1, cm.shape[0]):
+    for j in range(cm.shape[1]):
+        num_all_2 += cm[i][j]
+        if i == j:     # so diagonal
+            num_correct_2 += cm[i][j]
+
+accuracy_2 = num_correct_2 / num_all_2
+print('Final Accuracy Score without qqH rest: ', accuracy_2)
 
 
 def plot_output_score(data='output_score_qqh', density=False,):
@@ -558,7 +585,8 @@ plot_performance_plot()
 
 plot_roc_curve(binNames = binNames)
 
-print('NN_qqH_sevenclass: ', NNaccuracy)
+print('NN Final Accuracy Score with qqH rest: ', accuracy)
+print('NN Final Accuracy Score without qqH rest: ', accuracy_2)
 
 """
 plot_output_score(data='output_score_qqh1')
@@ -574,20 +602,173 @@ plot_output_score(data='output_score_qqh7')
 #plot_confusion_matrix(cm,binNames,normalize=True)
 
 
-#save as a pickle file
-#trainTotal.to_pickle('%s/nClassNNTotal.pkl'%frameDir)
-#print 'frame saved as %s/nClassNNTotal.pkl'%frameDir
-#Read in pickle file
-#trainTotal = pd.read_pickle(opts.dataFrame)
-#print 'Successfully loaded the dataframe'
+# ------------------------ 
+# Binary BDT for signal purity
+# okayy lessgooo
+
+# data_new['proc']  # are the true labels
+# data_new['weight'] are the weights
+
+num_estimators = 1
+test_split = 0.15
+
+clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
+                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
+                            subsample=0.6, colsample_bytree=0.6, gamma=4)
+
+signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
+            'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
+            'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25', 'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200']
+#signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120'] # for debugging
+#conf_matrix = np.zeros((2,1)) # for the final confusion matrix
+conf_matrix_w = np.zeros((2,len(signal)))
+conf_matrix_no_w = np.zeros((2,len(signal)))
+
+fig, ax = plt.subplots()
+plt.rcParams.update({'font.size': 9})
+for i in range(len(signal)):
+    data_new = x_test.copy()  
+    data_new = data_new.drop(columns = ['output_score_qqh1','output_score_qqh2', 'output_score_qqh3', 'output_score_qqh4',
+                                        'output_score_qqh5', 'output_score_qqh6', 'output_score_qqh7'])
+    # now i want to get the predicted labels
+    proc_pred = []      
+    for j in range(len(y_pred)):
+        if(y_pred[j] == i): # so that the predicted label is the signal
+            proc_pred.append(signal[i])
+        else:
+            proc_pred.append('background')
+    data_new['proc_pred'] = proc_pred       # Problem might be here, they don't seem to line up
+
+    #exit(0)
+
+    # now cut down the dataframe to the predicted ones -  this is the split for the different dataframes
+    data_new = data_new[data_new.proc_pred == signal[i]] 
+
+    # now from proc make signal against background (binary classifier)
+
+    proc_true = np.array(data_new['proc'])
+    y_train_labels_num = []
+    y_train_labels = []
+    for j in range(len(proc_true)):
+        if proc_true[j] == signal[i]:
+            y_train_labels.append(signal[i])
+            y_train_labels_num.append(1)
+        else: 
+            y_train_labels.append('background')
+            y_train_labels_num.append(0)
+    y_train_labels = np.array(y_train_labels)
+    y_train_labels_num = np.array(y_train_labels_num)
+    
+    weights_new = np.array(data_new['weight'])
+    
+    data_new = data_new.drop(columns=['weight'])
+    data_new = data_new.drop(columns=['proc'])
+    data_new = data_new.drop(columns=['proc_pred'])
+
+    # the new split
+    x_train_2, x_test_2, y_train_2, y_test_2, train_w_2, test_w_2, proc_arr_train_2, proc_arr_test_2 = train_test_split(data_new, y_train_labels_num, weights_new, y_train_labels, test_size = test_split, shuffle = True)
+
+    train_w_df = pd.DataFrame()
+    train_w = 300 * train_w_2 # to make loss function O(1)
+    train_w_df['weight'] = train_w
+    train_w_df['proc'] = proc_arr_train_2
+    signal_sum_w = train_w_df[train_w_df['proc'] == signal[i]]['weight'].sum()
+    background_sum_w = train_w_df[train_w_df['proc'] == 'background']['weight'].sum()
+
+    train_w_df.loc[train_w_df.proc == 'background','weight'] = (train_w_df[train_w_df['proc'] == 'background']['weight'] * signal_sum_w / background_sum_w)
+    train_w_new = np.array(train_w_df['weight'])
+
+    #print (' Training classifier with Signal = ', signal[i])
+    clf_2 = clf_2.fit(x_train_2, y_train_2, sample_weight=train_w_new)
+    #print (' Finished classifier with Signal = ', signal[i])
+
+    y_pred_test_2 = clf_2.predict_proba(x_test_2) 
+    y_pred_2 = y_pred_test_2.argmax(axis=1)
+
+    cm_2 = confusion_matrix(y_true = y_test_2, y_pred = y_pred_2, sample_weight = test_w_2)  #weights result in decimal values <1 so not sure if right
+    cm_2_no_weights = confusion_matrix(y_true = y_test_2, y_pred = y_pred_2)
+
+    #print('cm_2:')
+    #print(cm_2)
+
+    # grabbing predicted label column
+    #norm = cm_2[0][1] + cm_2[1][1]
+    #conf_matrix[0][i] = (cm_2[0][1])/norm
+    #conf_matrix[1][i] = (cm_2[1][1])/norm
+
+    conf_matrix_w[0][i] = cm_2[0][1]
+    conf_matrix_w[1][i] = cm_2[1][1]
+    conf_matrix_no_w[0][i] = cm_2_no_weights[0][1]
+    conf_matrix_no_w[1][i] = cm_2_no_weights[1][1]
+
+    # ROC Curve
+    sig_y_test  = np.where(y_test_2==1, 1, 0)
+    #sig_y_test  = y_test_2
+    y_pred_test_array = y_pred_test_2[:,1] # to grab the signal
+    fpr_keras, tpr_keras, thresholds_keras = roc_curve(sig_y_test, y_pred_test_array, sample_weight = test_w_2)
+    fpr_keras.sort()
+    tpr_keras.sort()
+    name_fpr = 'csv_files/NN_binary_fpr_' + signal[i]
+    name_tpr = 'csv_files/NN_binary_tpr_' + signal[i]
+    np.savetxt(name_fpr, fpr_keras, delimiter = ',')
+    np.savetxt(name_tpr, tpr_keras, delimiter = ',')
+    auc_test = auc(fpr_keras, tpr_keras)
+    ax.plot(fpr_keras, tpr_keras, label = 'AUC = {0}, {1}'.format(round(auc_test, 3), labelNames[i]), color = color[i])
+
+ax.legend(loc = 'lower right', fontsize = 'small')
+ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
+ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
+ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
+plt.tight_layout()
+name = 'plotting/NN_plots/NN_qqH_binary_Multi_ROC_curve'
+plt.savefig(name, dpi = 1200)
+print("Plotting ROC Curve")
+plt.close()
+
+#print('Final conf_matrix:')
+#print(conf_matrix_w)
+
+#Need a new function beause the cm structure is different
+def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = color, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final'):
+    cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
+    for i in range(len(cm[0])):
+        for j in range(len(cm[:,1])):
+            cm[j][i] = float("{:.3f}".format(cm[j][i]))
+    cm = np.array(cm)
+    fig, ax = plt.subplots(figsize = (10,10))
+    plt.rcParams.update({
+    'font.size': 9})
+    tick_marks = np.arange(len(labels))
+    plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
+    bottom = np.zeros(len(labels))
+    ax.bar(labels, cm[1,0],label='Signal',bottom=bottom,color=color[1])
+    bottom += np.array(cm[1,:])
+    ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color=color[0])
+    plt.legend()
+    current_bottom, current_top = ax.get_ylim()
+    ax.set_ylim(bottom=0, top=current_top*1.3)
+    plt.ylabel('Fraction of events', size = 12)
+    ax.set_xlabel('Events',size=12)
+    plt.tight_layout()
+    plt.savefig(name, dpi = 1200)
+    plt.show()
+# now to make our final plot of performance
+plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Performance_Plot_final')
+
+num_false = np.sum(conf_matrix_w[0,:])
+num_correct = np.sum(conf_matrix_w[1,:])
+accuracy = num_correct / (num_correct + num_false)
+print('NN Final Accuracy Score with qqH:')
+print(accuracy)
+
+num_false = np.sum(conf_matrix_w[0,1:])
+num_correct = np.sum(conf_matrix_w[1,1:])
+accuracy = num_correct / (num_correct + num_false)
+print('NN Final Accuracy Score without qqH:')
+print(accuracy)
 
 
 
-# today
-# new vars - done
-# cut-based - have a base
-# new qqh + subsub
-# labels and confusion
 
 
 
@@ -599,122 +780,3 @@ plot_output_score(data='output_score_qqh7')
 
 
 
-
-
-
-
-
-
-
-
-"""
-# waiiiit i got a new smart way
-# ...
-
-# getting rid of the -999
-data.loc[:, 'leadJetPt_new'] = data['leadJetPt']
-data['leadJetPt_new'].replace(-999.0, 0)
-data.loc[:, 'leadJetPhi_new'] = data['leadJetPhi'] 
-data['leadJetPhi_new'].replace(-999.0, 0)
-
-data.loc[:, 'subleadJetPt_new'] = data['subleadJetPt']
-data['subleadJetPt_new'].replace(-999.0, 0)
-data.loc[:, 'subleadJetPhi_new'] = data['subleadJetPhi'] 
-data['subleadJetPhi_new'].replace(-999.0, 0)
-
-data.loc[:, 'leadPhotonPt_new'] = data['leadPhotonPt']
-data['leadPhotonPt_new'].replace(-999.0, 0)
-data.loc[:, 'leadPhotonPhi_new'] = data['leadPhotonPhi'] 
-data['leadPhotonPhi_new'].replace(-999.0, 0)
-
-data.loc[:, 'subleadPhotonPt_new'] = data['subleadPhotonPt']
-data['subleadPhotonPt_new'].replace(-999.0, 0)
-data.loc[:, 'subleadPhotonPhi_new'] = data['subleadPhotonPhi'] 
-data['subleadPhotonPhi_new'].replace(-999.0, 0)
-
-
-# performing calculation
-
-data.loc[:, 'px_sum'] = data['leadJetPt_new'] * np.cos(data['leadJetPhi_new']) + data['subleadJetPt_new'] * np.cos(data['subleadJetPhi_new']) + data['leadPhotonPt_new'] * np.cos(data['leadPhotonPhi_new']) + data['subleadPhotonPt_new'] * np.cos(data['subleadPhotonPhi_new'])
-data.loc[:, 'py_sum'] = data['leadJetPt_new'] * np.sin(data['leadJetPhi_new']) + data['subleadJetPt_new'] * np.sin(data['subleadJetPhi_new']) + data['leadPhotonPt_new'] * np.sin(data['leadPhotonPhi_new']) + data['subleadPhotonPt_new'] * np.sin(data['subleadPhotonPhi_new'])
-data.loc[:, 'pTHjj'] = np.sqrt(data['px_sum']**2 + data['py_sum']**2)
-print data['pTHjj']
-exit(0)
-
-# check for wrong calculation due to replacement of -999 to 0 and remove
-# check if all 
-data.loc[data['']]
-
-
-train_w_df.loc[train_w_df.proc == 'WH','weight'] = (train_w_df[train_w_df['proc'] == 'WH']['weight'] * ggh_sum_w / wh_sum_w)
-
-
-# check for wrong calculation due to the replacement of -999 to 0 and remove
-
-data.loc[df['leadJetPt_new'] == -999.0, 'leadJetPt_new'] = 0
-
-
-exit 
-data.loc[data['leadJetPt'] != -999.0, 'new'] = 0
-
-df['col1'] = df.apply(lambda x: x['col3'] if x['col1'] < x['col2'] else x['col1'], axis=1)
-
-df.loc[row_indexes,'elderly']="yes"
-data.loc[data['leadJetPt'] != -999.0, 'new'] = data['leadJetPt']
-
-data['leadJetPt_new'] = np.where(data['leadJetPt'] != -999.0, data['leadJetPt'], 0)
-
-data['check_jet1'] = data.where(data['leadJetPt'] == -999.0 | data['leadJetPhi'] == -999.0)
-data['check_jet2'] = data.where((data['subleadJetPt'] == -999) | (data['subleadJetPhi'] == -999), True, False)
-data['check_ph1'] = data.where((data['leadPhotonPt'] == -999) | (data['leadPhotonPhi'] == -999), True, False)
-data['check_ph2'] = data.where(data['subleadPhotonPt'] == -999 or data['subleadPhotonPhi'] == -999, True, False)
-
-
-
-
-print 'Trying a'
-
-for i in range(data.shape[0]):
-    # creating pTHjj variable
-    if data['leadJetPt'].iloc[i] != -999 | data['leadJetPhi'].iloc[i] != -999:
-        px_jet1 = data['leadJetPt'].iloc[i]*np.cos(data['leadJetPhi'].iloc[i])
-        py_jet1 = data['leadJetPt'].iloc[i]*np.sin(data['leadJetPhi'].iloc[i])
-    else:
-        px_jet1 = 0
-        py_jet1 = 0
-    if data['subleadJetPt'].iloc[i] != -999 | data['subleadJetPhi'].iloc[i] != -999:
-        px_jet2 = data['subleadJetPt'].iloc[i]*np.cos(data['subleadJetPhi'].iloc[i])
-        py_jet2 = data['subleadJetPt'].iloc[i]*np.sin(data['subleadJetPhi'].iloc[i])
-    else:
-        px_jet2 = 0
-        py_jet2 = 0
-    if data['leadPhotonPt'].iloc[i] != -999 | data['leadPhotonPhi'].iloc[i] != -999:
-        px_ph1 = data['leadPhotonPt'].iloc[i]*np.cos(data['leadPhotonPhi'].iloc[i])
-        py_ph1 = data['leadPhotonPt'].iloc[i]*np.sin(data['leadPhotonPhi'].iloc[i])
-    else:
-        px_ph1 = 0
-        py_ph1 = 0
-    if data['subleadPhotonPt'].iloc[i] != -999 | data['subleadPhotonPhi'].iloc[i] != -999:
-        px_ph2 = data['subleadPhotonPt'].iloc[i]*np.cos(data['subleadPhotonPhi'].iloc[i])
-        py_ph2 = data['subleadPhotonPt'].iloc[i]*np.sin(data['subleadPhotonPhi'].iloc[i])
-    else:
-        px_ph1 = 0
-        py_ph2 = 0
-
-    px_sum = px_jet1 + px_jet2 + px_ph1 + px_ph2
-    py_sum = py_jet1 + py_jet2 + py_ph1 + py_ph2
-
-    data['pTHjj'] = np.sqrt(px_sum**2 + py_sum**2)
-
-print(data['pTHjj'])
-# all only the ones actually
-# remember to make if pthjj equal to -999 if 0 so i can remove it later no? just make sure that i dont actually count it here epidi
-# apla evala 0 to make it easier alla in reality einai epidi einai undefined
-
-# relabeling
-data['check_jet1'] = data.where(data['leadJetPt'] == -999 | data['leadJetPhi'] == -999)
-data['check_jet2'] = data.where((data['subleadJetPt'] == -999) | (data['subleadJetPhi'] == -999), True, False)
-data['check_ph1'] = data.where((data['leadPhotonPt'] == -999) | (data['leadPhotonPhi'] == -999), True, False)
-data['check_ph2'] = data.where(data['subleadPhotonPt'] == -999 or data['subleadPhotonPhi'] == -999, 1, 0)
-
-"""
