@@ -407,6 +407,7 @@ for i in range(len(signal)):
     data_new['proc_pred'] = proc_pred    
 
     #exit(0)
+    rest, data_new = train_test_split(data_new, test_size = test_split, shuffle = True)
 
     # now cut down the dataframe to the predicted ones -  this is the split for the different dataframes
     data_new = data_new[data_new.proc_pred == signal[i]] 
@@ -496,6 +497,10 @@ plt.close()
 
 print('Final conf_matrix:')
 print(conf_matrix_w)
+
+#Exporting final confusion matrix
+name_cm = 'csv_files/Cuts_binary_cm'
+np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
 
 #Need a new function beause the cm structure is different
 def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = color, name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot_final'):

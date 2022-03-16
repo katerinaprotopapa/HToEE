@@ -44,7 +44,7 @@ viridis = cm.get_cmap('viridis', 8)
 #learning_rate = 0.001
 
 #Optimized according to 4class
-num_epochs = 1
+num_epochs = 40
 batch_size = 64
 test_split = 0.2
 val_split = 0.1
@@ -609,7 +609,7 @@ plot_output_score(data='output_score_qqh7')
 # data_new['proc']  # are the true labels
 # data_new['weight'] are the weights
 
-num_estimators = 1
+num_estimators = 200
 test_split = 0.15
 
 clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
@@ -728,6 +728,10 @@ plt.close()
 #print('Final conf_matrix:')
 #print(conf_matrix_w)
 
+#Exporting final confusion matrix
+name_cm = 'csv_files/NN_binary_cm'
+np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
+
 #Need a new function beause the cm structure is different
 def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = color, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final'):
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
@@ -744,7 +748,7 @@ def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = colo
     ax.bar(labels, cm[1,0],label='Signal',bottom=bottom,color=color[1])
     bottom += np.array(cm[1,:])
     ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color=color[0])
-    plt.legend()
+    plt.legend(fontsize = 12)
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
     plt.ylabel('Fraction of events', size = 12)
@@ -753,7 +757,7 @@ def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = colo
     plt.savefig(name, dpi = 1200)
     plt.show()
 # now to make our final plot of performance
-plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Performance_Plot_final')
+plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final')
 
 num_false = np.sum(conf_matrix_w[0,:])
 num_correct = np.sum(conf_matrix_w[1,:])
