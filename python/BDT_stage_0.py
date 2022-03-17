@@ -14,7 +14,7 @@ from keras.utils import np_utils
 from sklearn.metrics import accuracy_score, log_loss, confusion_matrix, roc_curve, auc, roc_auc_score
 
 #Define key quantities, use to tune BDT
-num_estimators = 20
+num_estimators = 1
 test_split = 0.15
 learning_rate = 0.001
 
@@ -44,10 +44,10 @@ train_vars = ['diphotonMass', 'diphotonPt', 'diphotonEta',
 #'subsubleadJetEn', 'subsubleadJetEta', 'subsubleadJetPhi',
 #'subsubleadJetMass', 'subsubleadJetBTagScore','nSoftJets',
 #'metPt','metPhi','metSumET'
-'leadElectronEn','leadElectronMass','leadElectronPt','leadElectronEta','leadElectronPhi','leadElectronCharge',
-'leadMuonEn','leadMuonMass','leadMuonPt','leadMuonEta','leadMuonPhi','leadMuonCharge',
-'subleadElectronEn','subleadElectronMass','subleadElectronPt','subleadElectronEta','subleadElectronPhi','subleadElectronCharge',
-'subleadMuonEn','subleadMuonMass','subleadMuonPt','subleadMuonEta','subleadMuonPhi','subleadMuonCharge'
+#'leadElectronEn','leadElectronMass','leadElectronPt','leadElectronEta','leadElectronPhi','leadElectronCharge',
+#'leadMuonEn','leadMuonMass','leadMuonPt','leadMuonEta','leadMuonPhi','leadMuonCharge',
+#'subleadElectronEn','subleadElectronMass','subleadElectronPt','subleadElectronEta','subleadElectronPhi','subleadElectronCharge',
+#'subleadMuonEn','subleadMuonMass','subleadMuonPt','subleadMuonEta','subleadMuonPhi','subleadMuonCharge'
 ]
 
 train_vars.append('proc')
@@ -56,12 +56,12 @@ train_vars.append('HTXS_stage_0')
 #train_vars.append('HTXS_stage1_2_cat_pTjet30GeV')
 
 dataframes = []
-dataframes.append(pd.read_csv('2017/MC/DataFrames/ggH_VBF_BDT_df_2017.csv', nrows = 300000))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/VBF_VBF_BDT_df_2017.csv', nrows = 300000))
+dataframes.append(pd.read_csv('2017/MC/DataFrames/ggH_VBF_BDT_df_2017.csv', nrows = 329350))
+dataframes.append(pd.read_csv('2017/MC/DataFrames/VBF_VBF_BDT_df_2017.csv', nrows = 311692))
 dataframes.append(pd.read_csv('2017/MC/DataFrames/VH_VBF_BDT_df_2017.csv'))
 dataframes.append(pd.read_csv('2017/MC/DataFrames/ttH_VBF_BDT_df_2017.csv'))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/tHq_VBF_BDT_df_2017.csv', nrows = 300000))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/tHW_VBF_BDT_df_2017.csv', nrows = 200000))
+dataframes.append(pd.read_csv('2017/MC/DataFrames/tHq_VBF_BDT_df_2017.csv', nrows = 203231))
+dataframes.append(pd.read_csv('2017/MC/DataFrames/tHW_VBF_BDT_df_2017.csv', nrows = 174533))
 df = pd.concat(dataframes, sort=False, axis=0 )
 
 data = df[train_vars]
@@ -71,6 +71,12 @@ data = data[data.diphotonMass>100.]
 data = data[data.diphotonMass<180.]
 data = data[data.leadPhotonPtOvM>0.333]
 data = data[data.subleadPhotonPtOvM>0.25]
+
+# weights to account for not importing all the rows of the dataframes
+data.loc[data.proc == 'ggH','weight'] = data[data['proc'] == 'ggH']['weight'] * 3
+data.loc[data.proc == 'VBF','weight'] = data[data['proc'] == 'VBF']['weight'] * 3
+data.loc[data.proc == 'tHq','weight'] = data[data['proc'] == 'tHq']['weight'] * 5
+data.loc[data.proc == 'tHW','weight'] = data[data['proc'] == 'tHW']['weight'] * 3
 
 def mapping(map_list,stage):
     proc_list = []
@@ -90,8 +96,10 @@ def mapping(map_list,stage):
 
 data['proc_new'] = mapping(map_list=map_def,stage=data['HTXS_stage_0'])
 
-# weights to account for importing half of the tH
-data.loc[data.proc_new == 'tH','weight'] = data[data['proc_new'] == 'tH']['weight'] * 4
+# weights to account for not importing all the rows of the dataframes
+#data.loc[data.proc_new == 'ggH','weight'] = data[data['proc_new'] == 'ggH']['weight'] * 3
+#data.loc[data.proc_new == 'tH','weight'] = data[data['proc_new'] == 'tH']['weight'] * 4 
+
 #exit(0)
 
 #Define the procs as the labels
@@ -100,14 +108,20 @@ data.loc[data.proc_new == 'tH','weight'] = data[data['proc_new'] == 'tH']['weigh
 #y_train_labels_num, y_train_labels_def = pd.factorize(data['proc'])
 
 num_categories = data['proc_new'].nunique()
-y_train_labels_num, y_train_labels_def = pd.factorize(data['proc_new'])
-
-#Label definition:
-print('Label Definition:')
-label_def = []
-for i in range(num_categories):
-    label_def.append([i,y_train_labels_def[i]])
-    print(i,y_train_labels_def[i])
+proc_new = np.array(data['proc_new'])
+#Assign the numbers in the same order as the binNames above
+y_train_labels_num = []
+for i in proc_new:
+    if i == 'ggH':
+        y_train_labels_num.append(0)
+    if i == 'qqH':
+        y_train_labels_num.append(1)
+    if i == 'VH':
+        y_train_labels_num.append(2)
+    if i == 'ttH':
+        y_train_labels_num.append(3)
+    if i == 'tH':
+        y_train_labels_num.append(4)
 
 data['proc_num'] = y_train_labels_num
 
@@ -173,7 +187,7 @@ print(NNaccuracy)
 
 #Confusion Matrix
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
-
+cm_old = cm
 
 #Confusion Matrix
 def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='Confusion matrix',cmap=plt.cm.Blues, name = 'plotting/BDT_plots/BDT_stage_0_Confusion_Matrix'):
@@ -400,8 +414,12 @@ name_cm = 'csv_files/BDT_stage_0_BDT_binary_cm'
 np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
 
 #Need a new function beause the cm structure is different
-def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = color, name = 'plotting/BDT_plots/BDT_stage_0_Performance_Plot_final'):
+def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNames, color = color, name = 'plotting/BDT_plots/BDT_stage_0_Performance_Plot_final'):
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
+    cm_old = cm_old.astype('float')/cm_old.sum(axis=0)[np.newaxis,:]
+    sig_old = []
+    for k in range(cm_old.shape[0]):
+        sig_old.append(cm_old[k][k])
     for i in range(len(cm[0])):
         for j in range(len(cm[:,1])):
             cm[j][i] = float("{:.3f}".format(cm[j][i]))
@@ -412,9 +430,10 @@ def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = colo
     tick_marks = np.arange(len(labels))
     plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
     bottom = np.zeros(len(labels))
-    ax.bar(labels, cm[1,:],label='Signal',bottom=bottom,color=color[1])
+    ax.bar(labels, cm[1,:],label='Signal',bottom=bottom,color='indianred')
+    ax.bar(labels, sig_old, label = 'Signal before binary BDT', bottom = bottom, fill = False, ecolor = 'black')
     bottom += np.array(cm[1,:])
-    ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color=color[0])
+    ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color='silver')
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)

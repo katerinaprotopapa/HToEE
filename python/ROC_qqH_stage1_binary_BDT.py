@@ -38,12 +38,16 @@ Cuts_cm = np.loadtxt('csv_files/Cuts_binary_cm', delimiter = ',')
 for i in range(len(signal)):
 
     len_signal = []
-    len_signal.append(np.sum(BDT_cm[:,i]))   
-    len_signal.append(np.sum(NN_cm[:,i]))   
-    len_signal.append(np.sum(Cuts_cm[:,i]))   
+    len_signal.append(np.sum(BDT_cm[1,i]))   
+    len_signal.append(np.sum(NN_cm[1,i]))   
+    len_signal.append(np.sum(Cuts_cm[1,i]))   
     len_signal = np.array(len_signal)
     scale = np.max(len_signal)
     scale_array = len_signal/scale
+
+    scale_BDT_sig =  
+    scale_NN = 
+    scale_cuts = 
 
     fig, ax = plt.subplots()
     #BDT

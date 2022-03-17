@@ -49,7 +49,7 @@ batch_size = 64
 test_split = 0.2
 val_split = 0.1
 learning_rate = 0.0001
-
+ 
 
 #STXS mapping
 map_def_0 = [['ggH',10,11],['qqH',20,21,22,23],['WH',30,31],['ZH',40,41],['ttH',60,61],['tH',80,81]]
@@ -430,6 +430,7 @@ y_true = y_test.argmax(axis=1)
 
 #Confusion Matrix
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
+cm_old = cm
 
 #Accuracy Score
 #y_pred = y_pred_test.argmax(axis=1)
@@ -733,8 +734,12 @@ name_cm = 'csv_files/NN_binary_cm'
 np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
 
 #Need a new function beause the cm structure is different
-def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = color, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final'):
+def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNames, color = color, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final'):
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
+    cm_old = cm_old.astype('float')/cm_old.sum(axis=0)[np.newaxis,:]
+    sig_old = []
+    for k in range(cm_old.shape[0]):
+        sig_old.append(cm_old[k][k])
     for i in range(len(cm[0])):
         for j in range(len(cm[:,1])):
             cm[j][i] = float("{:.3f}".format(cm[j][i]))
@@ -748,6 +753,7 @@ def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = colo
     ax.bar(labels, cm[1,0],label='Signal',bottom=bottom,color=color[1])
     bottom += np.array(cm[1,:])
     ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color=color[0])
+    ax.bar(labels, sig_old, label = 'Signal before binary BDT',fill = False, ecolor = 'black')
     plt.legend(fontsize = 12)
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)

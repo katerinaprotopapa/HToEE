@@ -278,6 +278,7 @@ y_pred = y_train_labels_num_pred
 
 #cm_old = confusion_matrix(y_true=y_true,y_pred=y_pred)
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred,sample_weight=weights)
+cm_old = cm
 #cm_new = np.zeros((len(binNames),len(binNames)),dtype=int)
 #for i in range(len(y_true)):
 #    cm_new[y_true[i]][y_pred[i]] += 1
@@ -365,8 +366,8 @@ def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = col
     plt.show()
 
 
-#plot_confusion_matrix(cm,binNames,normalize=True)
-#plot_performance_plot()
+plot_confusion_matrix(cm,binNames,normalize=True)
+plot_performance_plot()
 
 print('Cuts_qqH_sevenclass: ', NNaccuracy)
 print('Cuts Final Accuracy Score with qqH rest: ', accuracy)
@@ -381,7 +382,7 @@ print('Cuts Final Accuracy Score without qqH rest: ', accuracy_2)
 # data_new['proc']  # are the true labels
 # data_new['weight'] are the weights
 
-num_estimators = 1
+num_estimators = 200
 test_split = 0.15
 
 clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
@@ -503,8 +504,12 @@ name_cm = 'csv_files/Cuts_binary_cm'
 np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
 
 #Need a new function beause the cm structure is different
-def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = color, name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot_final'):
+def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNames, color = color, name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot_final'):
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
+    cm_old = cm_old.astype('float')/cm_old.sum(axis=0)[np.newaxis,:]
+    sig_old = []
+    for k in range(cm_old.shape[0]):
+        sig_old.append(cm_old[k][k])
     for i in range(len(cm[0])):
         for j in range(len(cm[:,1])):
             cm[j][i] = float("{:.3f}".format(cm[j][i]))
@@ -518,6 +523,7 @@ def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = colo
     ax.bar(labels, cm[1,0],label='Signal',bottom=bottom,color=color[1])
     bottom += np.array(cm[1,:])
     ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color=color[0])
+    ax.bar(labels, sig_old, label = 'Signal before binary BDT',fill = False, ecolor = 'black')
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
@@ -527,7 +533,7 @@ def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = colo
     plt.savefig(name, dpi = 1200)
     plt.show()
 # now to make our final plot of performance
-#plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot_final')
+plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot_final')
 
 num_false = np.sum(conf_matrix_w[0,:])
 num_correct = np.sum(conf_matrix_w[1,:])

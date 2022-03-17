@@ -31,7 +31,7 @@ from keras.metrics import categorical_crossentropy, binary_crossentropy
 #Define key quantities
 
 #HPs
-num_epochs = 3
+num_epochs = 20
 batch_size = 64
 val_split = 0.15
 test_split = 0.15
@@ -235,6 +235,7 @@ print(NNaccuracy)
 
 #Confusion Matrix
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
+cm_old = cm
 
 """
 def roc_comp_step1(ypred,output):
@@ -546,8 +547,12 @@ name_cm = 'csv_files/NN_stage_0_BDT_binary_cm'
 np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
 
 #Need a new function beause the cm structure is different
-def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = color, name = 'plotting/NN_plots/NN_stage_0_Performance_Plot_final'):
+def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNames, color = color, name = 'plotting/NN_plots/NN_stage_0_Performance_Plot_final'):
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
+    cm_old = cm_old.astype('float')/cm_old.sum(axis=0)[np.newaxis,:]
+    sig_old = []
+    for k in range(cm_old.shape[0]):
+        sig_old.append(cm_old[k][k])
     for i in range(len(cm[0])):
         for j in range(len(cm[:,1])):
             cm[j][i] = float("{:.3f}".format(cm[j][i]))
@@ -558,9 +563,10 @@ def plot_performance_plot_final(cm=conf_matrix_w,labels=labelNames, color = colo
     tick_marks = np.arange(len(labels))
     plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
     bottom = np.zeros(len(labels))
-    ax.bar(labels, cm[1,:],label='Signal',bottom=bottom,color=color[1])
+    ax.bar(labels, cm[1,:],label='Signal',bottom=bottom,color='indianred')
+    ax.bar(labels, sig_old, label = 'Signal before binary BDT', bottom = bottom, fill = False, ecolor = 'black')
     bottom += np.array(cm[1,:])
-    ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color=color[0])
+    ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color='silver')
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
