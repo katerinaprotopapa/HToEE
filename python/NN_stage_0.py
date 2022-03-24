@@ -31,7 +31,7 @@ from keras.metrics import categorical_crossentropy, binary_crossentropy
 #Define key quantities
 
 #HPs
-num_epochs = 20
+num_epochs = 40
 batch_size = 64
 val_split = 0.15
 test_split = 0.15
@@ -51,30 +51,27 @@ modelDir = 'neural_networks/models/'
 plotDir  = 'neural_networks/plots/'
 
 #Define the input features
-train_vars = ['diphotonMass', 'diphotonPt', 'diphotonEta',
-'diphotonPhi', 'diphotonCosPhi', 'diphotonSigmaMoM',
-'leadPhotonIDMVA', 'leadPhotonPtOvM', #'leadPhotonEta',
-'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi',
-#'subleadPhotonIDMVA', 
-'subleadPhotonPtOvM', 'subleadPhotonEta',
-'subleadPhotonEn', 'subleadPhotonPt',
-'subleadPhotonPhi', 'dijetMass', 'dijetPt', 'dijetEta', 'dijetPhi',
-#'dijetDPhi', 'dijetAbsDEta', 'dijetCentrality', 'dijetMinDRJetPho',
-'dijetDiphoAbsDEta', 'leadJetPUJID', 'leadJetPt', 'leadJetEn',
-'leadJetEta', 'leadJetPhi','leadJetMass', 'leadJetBTagScore',
-'leadJetDiphoDEta', 'leadJetDiphoDPhi', 'subleadJetPUJID',
-'subleadJetPt', 'subleadJetEn', 'subleadJetEta', 'subleadJetPhi',
-'subleadJetMass',# 'subleadJetBTagScore', 'subleadJetDiphoDPhi',
-#'subleadJetDiphoDEta',
-#, 'subsubleadJetPUJID', 'subsubleadJetPt',
-#'subsubleadJetEn', 'subsubleadJetEta', 'subsubleadJetPhi',
-#'subsubleadJetMass', 'subsubleadJetBTagScore','nSoftJets',
-#'metPt','metPhi','metSumET'
-'leadElectronEn','leadElectronMass','leadElectronPt','leadElectronEta','leadElectronPhi','leadElectronCharge',
-'leadMuonEn','leadMuonMass','leadMuonPt','leadMuonEta','leadMuonPhi','leadMuonCharge',
-'subleadElectronEn','subleadElectronMass','subleadElectronPt','subleadElectronEta','subleadElectronPhi','subleadElectronCharge',
-'subleadMuonEn','subleadMuonMass','subleadMuonPt','subleadMuonEta','subleadMuonPhi','subleadMuonCharge'
-]
+train_vars = ['diphotonPt', 'diphotonMass', 'diphotonCosPhi', 'diphotonEta','diphotonPhi', 'diphotonSigmaMoM',
+     'dijetMass', 'dijetAbsDEta', 'dijetDPhi', 'dijetCentrality',
+     'dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
+     'leadPhotonEta', 'leadPhotonIDMVA', 'leadPhotonEn', 'leadPhotonPt', 'leadPhotonPhi', 'leadPhotonPtOvM',
+     'leadJetPt', 'leadJetPUJID', 'leadJetBTagScore', 'leadJetMass',
+     'leadJetDiphoDEta','leadJetDiphoDPhi','leadJetEn','leadJetEta','leadJetPhi',
+     'subleadPhotonEta', 'subleadPhotonIDMVA', 'subleadPhotonPhi',
+     'subleadPhotonEn','subleadPhotonPt', 'subleadPhotonPtOvM',
+     'subleadJetDiphoDPhi','subleadJetDiphoDEta',
+     'subleadJetPt', 'subleadJetPUJID', 'subleadJetBTagScore', 'subleadJetMass',
+     'subleadJetEn','subleadJetEta','subleadJetPhi',
+     'subsubleadJetEn','subsubleadJetPt','subsubleadJetEta','subsubleadJetPhi', 'subsubleadJetBTagScore', 
+     'subsubleadJetMass',
+     'metPt','metPhi','metSumET',
+     'nSoftJets',
+     'leadElectronEn', 'leadElectronMass', 'leadElectronPt', 'leadElectronEta', 'leadElectronPhi', 'leadElectronCharge',
+     'leadMuonEn', 'leadMuonMass', 'leadMuonPt', 'leadMuonEta', 'leadMuonPhi', 'leadMuonCharge',
+     'subleadElectronEn', 'subleadElectronMass', 'subleadElectronPt', 'subleadElectronEta', 'subleadElectronPhi', 'subleadElectronCharge', 
+     'subleadMuonEn', 'subleadMuonMass', 'subleadMuonPt', 'subleadMuonEta', 'subleadMuonPhi', 'subleadMuonCharge'
+     ]
+
 #Add proc and weight to shuffle with data
 train_vars.append('proc')
 train_vars.append('weight')
@@ -83,22 +80,30 @@ train_vars.append('HTXS_stage1_2_cat_pTjet30GeV')
 
 #Load the dataframe
 dataframes = []
-dataframes.append(pd.read_csv('2017/MC/DataFrames/ggH_VBF_BDT_df_2017.csv', nrows = 300000))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/VBF_VBF_BDT_df_2017.csv', nrows = 300000))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/VH_VBF_BDT_df_2017.csv'))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/ttH_VBF_BDT_df_2017.csv'))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/tHq_VBF_BDT_df_2017.csv', nrows = 300000))
-dataframes.append(pd.read_csv('2017/MC/DataFrames/tHW_VBF_BDT_df_2017.csv', nrows = 130900))
+dataframes.append(pd.read_csv('2017/MC/DataFrames/ggH_VBF_BDT_df_2017.csv', nrows = 98805)) # over 10
+dataframes.append(pd.read_csv('2017/MC/DataFrames/VBF_VBF_BDT_df_2017.csv', nrows = 93508)) # over 10
+dataframes.append(pd.read_csv('2017/MC/DataFrames/VH_VBF_BDT_df_2017.csv', nrows = 19888)) # over 10
+dataframes.append(pd.read_csv('2017/MC/DataFrames/ttH_VBF_BDT_df_2017.csv', nrows = 21121)) # over 10
+dataframes.append(pd.read_csv('2017/MC/DataFrames/tHq_VBF_BDT_df_2017.csv', nrows = 101616)) # over 10
+dataframes.append(pd.read_csv('2017/MC/DataFrames/tHW_VBF_BDT_df_2017.csv', nrows = 52360)) # over 10
 df = pd.concat(dataframes, sort=False, axis=0 )
 
 #dataframe of train_vars
 data = df[train_vars]
-
+ 
 #Preselection cuts
 data = data[data.diphotonMass>100.]
 data = data[data.diphotonMass<180.]
 data = data[data.leadPhotonPtOvM>0.333]
 data = data[data.subleadPhotonPtOvM>0.25]
+
+# weights to account for not importing all the rows of the dataframes
+data.loc[data.proc == 'ggH','weight'] = data[data['proc'] == 'ggH']['weight'] * 10
+data.loc[data.proc == 'VBF','weight'] = data[data['proc'] == 'VBF']['weight'] * 10
+data.loc[data.proc == 'VH','weight'] = data[data['proc'] == 'VH']['weight'] * 10
+data.loc[data.proc == 'ttH','weight'] = data[data['proc'] == 'ttH']['weight'] * 10
+data.loc[data.proc == 'tHq','weight'] = data[data['proc'] == 'tHq']['weight'] * 10
+data.loc[data.proc == 'tHW','weight'] = data[data['proc'] == 'tHW']['weight'] * 10
 
 
 def mapping(map_list,stage):
@@ -195,7 +200,7 @@ train_w_df.loc[train_w_df.proc == 'tH','weight'] = (train_w_df[train_w_df['proc'
 train_w = np.array(train_w_df['weight'])
 
 #Training the model
-history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2)
+history = model.fit(x=x_train,y=y_train,batch_size=batch_size,epochs=num_epochs,sample_weight=train_w,shuffle=True,verbose=2, validation_split = val_split)
 
 # Output Score
 y_pred_test = model.predict_proba(x=x_test)
@@ -236,6 +241,7 @@ print(NNaccuracy)
 #Confusion Matrix
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 cm_old = cm
+cm_old_no_weights = confusion_matrix(y_true=y_true,y_pred=y_pred)
 
 """
 def roc_comp_step1(ypred,output):
@@ -285,37 +291,46 @@ def plot_output_score(data='output_score_qqh', density=False,):
 #Plotting:
 #Plot accuracy
 def plot_accuracy():
-    #val_accuracy = history.history['val_acc']
+    val_accuracy = history.history['val_acc']
     accuracy = history.history['acc']
-    fig, ax = plt.subplots(1)
-    #plt.plot(epochs,val_accuracy,label='Validation')
-    plt.plot(epochs,accuracy,label='Train')
-    plt.title('Model Accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.xticks(epochs_int)
-    plt.legend()
-    name = 'plotting/NN_plots/NN_Accuracy'
-    fig.savefig(name)
+    fig, ax = plt.subplots()
+    plt.rcParams.update({
+    'font.size': 10})
+    ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
+    ax.plot(epochs,accuracy,label='Train', color = 'slateblue')
+    ax.plot(epochs,val_accuracy,label='Validation', color = 'indianred')
+    #plt.title('Loss function')
+    ax.legend(loc = 'lower right', fontsize = 'medium')
+    ax.set_ylabel('Accuracy',y=1, size=10)
+    ax.set_xlabel('Epoch', size=10)
+    name = 'plotting/NN_plots/NN_stage_0_Accuracy'
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(name, dpi = 1200)
+    plt.show()
 
 #Plot loss
 def plot_loss():
-    #val_loss = history.history['val_loss']
+    val_loss = history.history['val_loss']
     loss = history.history['loss']
-    fig, ax = plt.subplots(1)
-    #plt.plot(epochs,val_loss,label='Validation')
-    plt.plot(epochs,loss,label='Train')
-    plt.title('Loss function')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.xticks(epochs)
-    plt.legend()
-    name = 'plotting/NN_plots/NN_Loss'
-    fig.savefig(name)
+    fig, ax = plt.subplots()
+    plt.rcParams.update({
+    'font.size': 10})
+    ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
+    ax.plot(epochs,loss,label='Train', color = 'slateblue')
+    ax.plot(epochs,val_loss,label='Validation', color = 'indianred')
+    #plt.title('Loss function')
+    ax.legend(loc = 'upper right', fontsize = 'medium')
+    ax.set_ylabel('Loss', size=10)
+    ax.set_xlabel('Epoch', size=10)
+    name = 'plotting/NN_plots/NN_stage_0_Loss'
+    plt.tight_layout()
+    plt.savefig(name, dpi = 1200)
+    plt.show()
 
 
 #Confusion Matrix
-def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='Confusion matrix',cmap=plt.cm.Blues, name = 'plotting/NN_plots/NN_stage_0_Confusion_Matrix'):
+def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='Confusion matrix',cmap=plt.cm.Blues):
     fig, ax = plt.subplots(figsize = (10,10))
     #plt.colorbar()
     tick_marks = np.arange(len(classes))
@@ -323,8 +338,8 @@ def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='
     plt.yticks(tick_marks,labels)
     if normalize:
         cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
-        for i in range(cm.shape[0]):
-            for j in range(cm.shape[1]):
+        for i in range(len(cm[0])):
+            for j in range(len(cm[1])):
                 cm[i][j] = float("{:.2f}".format(cm[i][j]))
     thresh = cm.max()/2.
     print(cm)
@@ -336,10 +351,11 @@ def plot_confusion_matrix(cm,classes,labels = labelNames, normalize=True,title='
     plt.colorbar()
     plt.ylabel('True Label', size = 12)
     plt.xlabel('Predicted label', size = 12)
+    name = 'plotting/NN_plots/NN_stage_0_Sevenclass_Confusion_Matrix'
     plt.tight_layout()
     fig.savefig(name, dpi = 1200)
 
-def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = color, name = 'plotting/NN_plots/NN_stage_0_Performance_Plot'):
+def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = color):
     #cm = cm.astype('float')/cm.sum(axis=1)[:,np.newaxis]
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     for i in range(len(cm[0])):
@@ -364,12 +380,12 @@ def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = col
     #plt.title('Performance Plot')
     plt.ylabel('Fraction of events', size = 12)
     ax.set_xlabel('Events',size=12) #, x=1, size=13)
+    name = 'plotting/NN_plots/NN_stage_0_Performance_Plot'
     plt.tight_layout()
     plt.savefig(name, dpi = 1200)
     plt.show()
 
-
-def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color, name = 'plotting/NN_plots/NN_stage_0_ROC_curve'):
+def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_test, x_test = x_test, color = color):
     # sample weights
     # find weighted average 
     fig, ax = plt.subplots()
@@ -380,17 +396,16 @@ def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_
             if binNames[i] == signal:
                 #sig_y_test  = np.where(y_test==i, 1, 0)
                 sig_y_test = y_test[:,i]
-                #sig_y_test = y_test
-                print('sig_y_test', sig_y_test)
+                #print('sig_y_test', sig_y_test)
                 y_pred_test_array = y_pred_test[:,i]
-                print('y_pred_test_array', y_pred_test_array)
-                print('Here')
+                #print('y_pred_test_array', y_pred_test_array)
+                #print('Here')
                 #test_w = test_w.reshape(1, -1)
                 print('test_w', test_w)
                 #auc = roc_auc_score(sig_y_test, y_pred_test_array, sample_weight = test_w)
                 fpr_keras, tpr_keras, thresholds_keras = roc_curve(sig_y_test, y_pred_test_array, sample_weight = test_w)
                 #print('auc: ', auc)
-                print('Here')
+                #print('Here')
                 fpr_keras.sort()
                 tpr_keras.sort()
                 auc_test = auc(fpr_keras, tpr_keras)
@@ -399,35 +414,33 @@ def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
     ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
+    name = 'plotting/NN_plots/NN_stage_0_ROC_curve'
     plt.savefig(name, dpi = 1200)
     print("Plotting ROC Curve")
     plt.close()
 
-plot_confusion_matrix(cm,labelNames,normalize=True)
+#plot_confusion_matrix(cm,binNames,normalize=True)
 
-plot_performance_plot()
+#plot_performance_plot()
 
-plot_roc_curve()
+#plot_roc_curve(binNames = binNames)
 
+#exit(0)
 #plot_output_score(data='output_score_vbf')
 #plot_output_score(data='output_score_ggh')
 #plot_output_score(data='output_score_vh')
 #plot_output_score(data='output_score_tth')
 #plot_output_score(data='output_score_th')
 
-#plot_accuracy()
-#plot_loss()
-
+plot_accuracy()
+plot_loss()
+exit(0)
 # ------------------------ 
 # Binary BDT for signal purity
 # okayy lessgooo
 
 num_estimators = 200
 test_split = 0.15
-
-clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
-                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
-                            subsample=0.6, colsample_bytree=0.6, gamma=4)
 
 # data_new['proc']  # are the true labels
 # data_new['weight'] are the weights
@@ -442,6 +455,9 @@ fig, ax = plt.subplots()
 plt.rcParams.update({'font.size': 9})
 
 for i in range(len(signal)):
+    clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
+                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
+                            subsample=0.6, colsample_bytree=0.6, gamma=4)
     data_new = x_test.copy()  
     data_new = data_new.drop(columns = ['output_score_vbf', 'output_score_ggh', 'output_score_vh', 'output_score_tth', 'output_score_th'])
 
@@ -544,12 +560,15 @@ print(conf_matrix_w)
 
 #Exporting final confusion matrix
 name_cm = 'csv_files/NN_stage_0_BDT_binary_cm'
-np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
+np.savetxt(name_cm, cm_old, delimiter = ',')
+name_cm_no_w = 'csv_files/NN_stage_0_BDT_binary_cm_no_w'
+np.savetxt(name_cm_no_w, cm_old_no_weights, delimiter = ',')
 
 #Need a new function beause the cm structure is different
-def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNames, color = color, name = 'plotting/NN_plots/NN_stage_0_Performance_Plot_final'):
+def plot_performance_plot_final(cm=conf_matrix_w, cm_old = cm_old, labels=labelNames, color = color, name = 'plotting/NN_plots/NN_stage_0_Performance_Plot_final'):
     cm = cm.astype('float')/cm.sum(axis=0)[np.newaxis,:]
     cm_old = cm_old.astype('float')/cm_old.sum(axis=0)[np.newaxis,:]
+    color  = ['silver','indianred','salmon','lightgreen','seagreen','mediumturquoise','darkslategrey','skyblue','steelblue','lightsteelblue','mediumslateblue']
     sig_old = []
     for k in range(cm_old.shape[0]):
         sig_old.append(cm_old[k][k])
@@ -562,11 +581,11 @@ def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNam
     'font.size': 9})
     tick_marks = np.arange(len(labels))
     plt.xticks(tick_marks,labels,rotation=45, horizontalalignment = 'right')
-    bottom = np.zeros(len(labels))
-    ax.bar(labels, cm[1,:],label='Signal',bottom=bottom,color='indianred')
-    ax.bar(labels, sig_old, label = 'Signal before binary BDT', bottom = bottom, fill = False, ecolor = 'black')
+    bottom = np.zeros(len(labels))   
+    ax.bar(labels, cm[1,:],label='Signal',bottom=bottom,color=color[1])
     bottom += np.array(cm[1,:])
-    ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color='silver')
+    ax.bar(labels, cm[0,:],label='Background',bottom=bottom,color=color[0])
+    ax.bar(labels, sig_old, label = 'Signal before binary BDT',fill = False, ecolor = 'black')
     plt.legend()
     current_bottom, current_top = ax.get_ylim()
     ax.set_ylim(bottom=0, top=current_top*1.3)
@@ -576,7 +595,7 @@ def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNam
     plt.savefig(name, dpi = 1200)
     plt.show()
 # now to make our final plot of performance
-plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/NN_plots/NN_stage_0_Performance_Plot_final')
+#plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/NN_plots/NN_stage_0_Performance_Plot_final')
 
 num_false = np.sum(conf_matrix_w[0,:])
 num_correct = np.sum(conf_matrix_w[1,:])

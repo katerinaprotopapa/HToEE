@@ -279,6 +279,7 @@ y_pred = y_train_labels_num_pred
 #cm_old = confusion_matrix(y_true=y_true,y_pred=y_pred)
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred,sample_weight=weights)
 cm_old = cm
+cm_old_no_weights = confusion_matrix(y_true=y_true,y_pred=y_pred)
 #cm_new = np.zeros((len(binNames),len(binNames)),dtype=int)
 #for i in range(len(y_true)):
 #    cm_new[y_true[i]][y_pred[i]] += 1
@@ -365,9 +366,8 @@ def plot_performance_plot(cm=cm,labels=labelNames, normalize = True, color = col
     plt.savefig(name, dpi = 1200)
     plt.show()
 
-
-plot_confusion_matrix(cm,binNames,normalize=True)
-plot_performance_plot()
+#plot_confusion_matrix(cm,binNames,normalize=True)
+#plot_performance_plot()
 
 print('Cuts_qqH_sevenclass: ', NNaccuracy)
 print('Cuts Final Accuracy Score with qqH rest: ', accuracy)
@@ -383,11 +383,7 @@ print('Cuts Final Accuracy Score without qqH rest: ', accuracy_2)
 # data_new['weight'] are the weights
 
 num_estimators = 200
-test_split = 0.15
-
-clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
-                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
-                            subsample=0.6, colsample_bytree=0.6, gamma=4)
+test_split = 0.30
 
 signal = binNames
 #signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120'] # for debugging
@@ -395,8 +391,14 @@ signal = binNames
 conf_matrix_w = np.zeros((2,len(signal)))
 conf_matrix_no_w = np.zeros((2,len(signal)))
 
+conf_matrix_w2 = np.zeros((1,len(signal)))
+conf_matrix_no_w2 = np.zeros((1,len(signal)))
+
 fig, ax = plt.subplots()
 for i in range(len(signal)):
+    clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
+                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
+                            subsample=0.6, colsample_bytree=0.6, gamma=4)
     data_new = data.copy()  
     # now i want to get the predicted labels
     proc_pred = []      
@@ -472,6 +474,9 @@ for i in range(len(signal)):
     conf_matrix_no_w[0][i] = cm_2_no_weights[0][1]
     conf_matrix_no_w[1][i] = cm_2_no_weights[1][1]
 
+    conf_matrix_w2[0][i] = (cm_2[0][0] + cm_2[1][0]) / np.sum(np.array(cm_2))
+    conf_matrix_no_w2[0][i] = (cm_2_no_weights[0][0] + cm_2_no_weights[1][0])/ np.sum(np.array(cm_2_no_weights))
+
     # ROC Curve
     sig_y_test  = np.where(y_test_2==1, 1, 0)
     #sig_y_test  = y_test_2
@@ -501,7 +506,9 @@ print(conf_matrix_w)
 
 #Exporting final confusion matrix
 name_cm = 'csv_files/Cuts_binary_cm'
-np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
+np.savetxt(name_cm, cm_old, delimiter = ',')
+name_cm_no_w = 'csv_files/Cuts_binary_cm_no_w'
+np.savetxt(name_cm_no_w, cm_old_no_weights, delimiter = ',')
 
 #Need a new function beause the cm structure is different
 def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNames, color = color, name = 'plotting/Cuts/Cuts_qqH_Sevenclass_Performance_Plot_final'):

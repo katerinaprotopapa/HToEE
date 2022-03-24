@@ -47,7 +47,7 @@ viridis = cm.get_cmap('viridis', 8)
 num_epochs = 40
 batch_size = 64
 test_split = 0.2
-val_split = 0.1
+val_split = 0.30
 learning_rate = 0.0001
  
 
@@ -431,6 +431,7 @@ y_true = y_test.argmax(axis=1)
 #Confusion Matrix
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 cm_old = cm
+cm_old_no_weights = confusion_matrix(y_true=y_true,y_pred=y_pred)
 
 #Accuracy Score
 #y_pred = y_pred_test.argmax(axis=1)
@@ -580,11 +581,50 @@ def plot_roc_curve(binNames = labelNames, y_test = y_test, y_pred_test = y_pred_
     print("Plotting ROC Curve")
     plt.close()
 
-plot_confusion_matrix(cm,binNames,normalize=True)
+#Plot accuracy
+def plot_accuracy():
+    val_accuracy = history.history['val_acc']
+    accuracy = history.history['acc']
+    fig, ax = plt.subplots()
+    plt.rcParams.update({
+    'font.size': 10})
+    ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
+    ax.plot(epochs,accuracy,label='Train', color = 'slateblue')
+    ax.plot(epochs,val_accuracy,label='Validation', color = 'indianred')
+    #plt.title('Loss function')
+    ax.legend(loc = 'lower right', fontsize = 'medium')
+    ax.set_ylabel('Accuracy',y=1, size=10)
+    ax.set_xlabel('Epoch', size=10)
+    name = 'plotting/NN_plots/NN_qqH_sevenclass_Accuracy'
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(name, dpi = 1200)
+    plt.show()
 
-plot_performance_plot()
+#Plot loss
+def plot_loss():
+    val_loss = history.history['val_loss']
+    loss = history.history['loss']
+    fig, ax = plt.subplots()
+    plt.rcParams.update({
+    'font.size': 10})
+    ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
+    ax.plot(epochs,loss,label='Train', color = 'slateblue')
+    ax.plot(epochs,val_loss,label='Validation', color = 'indianred')
+    #plt.title('Loss function')
+    ax.legend(loc = 'upper right', fontsize = 'medium')
+    ax.set_ylabel('Loss', size=10)
+    ax.set_xlabel('Epoch', size=10)
+    name = 'plotting/NN_plots/NN_qqH_sevenclass_Loss'
+    plt.tight_layout()
+    plt.savefig(name, dpi = 1200)
+    plt.show()
 
-plot_roc_curve(binNames = binNames)
+#plot_confusion_matrix(cm,binNames,normalize=True)
+
+#plot_performance_plot()
+
+#plot_roc_curve(binNames = binNames)
 
 print('NN Final Accuracy Score with qqH rest: ', accuracy)
 print('NN Final Accuracy Score without qqH rest: ', accuracy_2)
@@ -600,6 +640,7 @@ plot_output_score(data='output_score_qqh7')
 """
 #plot_accuracy()
 #plot_loss()
+#exit(0)
 #plot_confusion_matrix(cm,binNames,normalize=True)
 
 
@@ -611,11 +652,7 @@ plot_output_score(data='output_score_qqh7')
 # data_new['weight'] are the weights
 
 num_estimators = 200
-test_split = 0.15
-
-clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
-                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
-                            subsample=0.6, colsample_bytree=0.6, gamma=4)
+test_split = 0.30
 
 signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
             'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
@@ -625,9 +662,15 @@ signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200
 conf_matrix_w = np.zeros((2,len(signal)))
 conf_matrix_no_w = np.zeros((2,len(signal)))
 
+conf_matrix_w2 = np.zeros((1,len(signal)))
+conf_matrix_no_w2 = np.zeros((1,len(signal)))
+
 fig, ax = plt.subplots()
 plt.rcParams.update({'font.size': 9})
 for i in range(len(signal)):
+    clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
+                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
+                            subsample=0.6, colsample_bytree=0.6, gamma=4)
     data_new = x_test.copy()  
     data_new = data_new.drop(columns = ['output_score_qqh1','output_score_qqh2', 'output_score_qqh3', 'output_score_qqh4',
                                         'output_score_qqh5', 'output_score_qqh6', 'output_score_qqh7'])
@@ -702,6 +745,9 @@ for i in range(len(signal)):
     conf_matrix_no_w[0][i] = cm_2_no_weights[0][1]
     conf_matrix_no_w[1][i] = cm_2_no_weights[1][1]
 
+    conf_matrix_w2[0][i] = (cm_2[0][0] + cm_2[1][0]) / np.sum(np.array(cm_2))
+    conf_matrix_no_w2[0][i] = (cm_2_no_weights[0][0] + cm_2_no_weights[1][0])/ np.sum(np.array(cm_2_no_weights))
+
     # ROC Curve
     sig_y_test  = np.where(y_test_2==1, 1, 0)
     #sig_y_test  = y_test_2
@@ -731,7 +777,9 @@ plt.close()
 
 #Exporting final confusion matrix
 name_cm = 'csv_files/NN_binary_cm'
-np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
+np.savetxt(name_cm, cm_old, delimiter = ',')
+name_cm_no_w = 'csv_files/NN_binary_cm_no_w'
+np.savetxt(name_cm_no_w, cm_old_no_weights, delimiter = ',')
 
 #Need a new function beause the cm structure is different
 def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNames, color = color, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final'):
@@ -763,7 +811,7 @@ def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNam
     plt.savefig(name, dpi = 1200)
     plt.show()
 # now to make our final plot of performance
-plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final')
+#plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final')
 
 num_false = np.sum(conf_matrix_w[0,:])
 num_correct = np.sum(conf_matrix_w[1,:])

@@ -13,8 +13,8 @@ from keras.utils import np_utils
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score, auc
 
 #Define key quantities, use to tune BDT
-num_estimators = 200
-test_split = 0.15
+num_estimators = 2
+test_split = 0.30
 learning_rate = 0.001
 
 #STXS mapping
@@ -115,10 +115,13 @@ df = pd.concat(dataframes, sort=False, axis=0 )
 
 data = df[train_vars]
 
+def error_fn(num_correct, num_all, sigma_correct, sigma_all):
+    error = (((1/num_all)**2) * (sigma_correct**2) + ((-num_correct / (num_all**2))**2) * (sigma_correct**2))**0.5
+    return error
+
 # pTHjj and njets variable construction
 # my soul has exited my body since I have tried every possible pandas way to do this ... I will turn to numpy arrays now for my own sanity
 # most inefficient code ever written lessgoooo
-
 
 leadJetPt = np.array(data['leadJetPt'])
 leadJetPhi = np.array(data['leadJetPhi'])
@@ -187,9 +190,9 @@ for i in range(data.shape[0]):
     njets.append(num_jet)
 data['njets'] = njets
 
-print('New Variables')
-print('pTHjj: ', data['pTHjj'])
-print('njets: ', data['njets'])
+#print('New Variables')
+#print('pTHjj: ', data['pTHjj'])
+#print('njets: ', data['njets'])
 
 
 data = data[data.diphotonMass>100.]
@@ -274,10 +277,6 @@ clf = xgb.XGBClassifier(objective='multi:softprob', n_estimators=num_estimators,
                             subsample=0.6, colsample_bytree=0.6, gamma=4,
                             num_class=7)
 
-clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
-                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
-                            subsample=0.6, colsample_bytree=0.6, gamma=4)
-
 #Equalizing weights
 train_w_df = pd.DataFrame()
 train_w = 300 * train_w # to make loss function O(1)
@@ -358,6 +357,15 @@ y_true = y_test
 #Confusion Matrix
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 cm_old = cm
+cm_old_no_weights = confusion_matrix(y_true=y_true,y_pred=y_pred)
+
+cm_new = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+cm_weights_new_squared = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+cm_weights_new = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+for i in range(len(y_true)):
+    cm_new[y_true[i]][y_pred[i]] += 1
+    cm_weights_new_squared[y_true[i]][y_pred[i]] += test_w[i]**2
+    cm_weights_new[y_true[i]][y_pred[i]] += test_w[i]
 
 #Accuracy Score
 """
@@ -368,14 +376,73 @@ print(NNaccuracy)
 
 num_correct = 0
 num_all = 0
-for i in range(cm.shape[0]):
-    for j in range(cm.shape[1]):
-        num_all += cm[i][j]
+sigma_correct = 0
+sigma_all = 0
+yield_all = 0
+yield_correct = 0
+for i in range(cm_new.shape[0]):
+    for j in range(cm_new.shape[1]):
+        num_all += cm_new[i][j]
+        sigma_all += cm_weights_new_squared[i][j]
+        yield_all += cm_weights_new[i][j]
         if i == j:     # so diagonal
-            num_correct += cm[i][j]
-
+            num_correct += cm_new[i][j]
+            sigma_correct += cm_weights_new_squared[i][j] 
+            yield_correct += cm_weights_new[i][j]
+sigma_all = sigma_all**0.5
+sigma_correct = sigma_correct**0.5
 accuracy = num_correct / num_all
-print('Final Accuracy Score with qqH rest: ', accuracy)
+
+acc_score_error = error_fn(yield_correct, yield_all, sigma_correct, sigma_all)
+print('Final Accuracy Score: ', accuracy)
+print('with error: ', acc_score_error)
+
+
+s_in = []
+s_in_w = []
+s_in_w_squared = []
+s_tot = []
+s_tot_w = []
+s_tot_w_squared = []
+e_s = []
+signal_error_list = []
+b_in = []
+b_in_w = []
+b_in_w_squared = []
+b_tot = []
+b_tot_w = []
+b_tot_w_squared = []
+e_b = []
+bckg_error_list = []
+
+for i in range(len(labelNames)):
+    s_in.append(cm_new[i][i])
+    s_in_w.append(np.sqrt(cm_weights_new[i][i]))
+    s_in_w_squared.append(cm_weights_new_squared[i][i])
+    s_tot.append(np.sum(cm_new[i,:]))
+    s_tot_w.append(np.sum(cm_weights_new[i,:]))
+    s_tot_w_squared.append(np.sum(cm_weights_new_squared[i,:]))
+    e_s.append(s_in[i]/s_tot[i])
+
+    b_in.append(np.sum(cm_new[:,i]) - s_in[i])
+    b_in_w.append(np.sum(cm_weights_new[:,i]) - s_in_w[i])
+    b_in_w_squared.append(np.sum(cm_weights_new_squared[:,i]) - s_in_w_squared[i])
+    b_tot.append(np.sum(cm_new) - s_tot[i])
+    b_tot_w.append(np.sum(cm_weights_new) - s_tot_w[i])
+    b_tot_w_squared.append(np.sum(cm_weights_new_squared) - s_tot_w_squared[i])
+    e_b.append(b_in[i]/b_tot[i])
+
+    signal_error = error_fn(s_in_w[i], s_tot_w[i], s_in_w_squared[i], s_tot_w_squared[i])
+    print('Final Signal Efficiency: ', e_s[i])
+    print('with error: ', signal_error)
+    signal_error_list.append(signal_error)
+
+    bckg_error = error_fn(b_in_w[i], b_tot_w[i], b_in_w_squared[i], b_tot_w_squared[i])
+    print('Final Signal Efficiency: ', e_b[i])
+    print('with error: ', bckg_error)
+    bckg_error_list.append(bckg_error)
+
+exit(0)
 
 num_correct_2 = 0
 num_all_2 = 0
@@ -523,11 +590,11 @@ def feature_importance(num_plots='single',num_feature=20,imp_type='gain',values 
             plt.savefig('plotting/BDT_plots/BDT_qqH_sevenclass_feature_importance_{0}'.format(i), dpi = 1200)
             print('saving: plotting/BDT_plots/BDT_qqH_sevenclass_feature_importance_{0}'.format(i))
 
-
-plot_confusion_matrix(cm,binNames,normalize=True)
-plot_performance_plot()
-plot_roc_curve()
-feature_importance()
+#exit(0)
+#plot_confusion_matrix(cm,binNames,normalize=True)
+#plot_performance_plot()
+#plot_roc_curve()
+#feature_importance()
 
 print('BDT Final Accuracy Score with qqH rest: ', accuracy)
 print('BDT Final Accuracy Score without qqH rest: ', accuracy_2)
@@ -555,15 +622,23 @@ plot_output_score(data='output_score_qqh7')
 signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120','QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_0_25',
             'QQ2HQQ_GE2J_MJJ_350_700_PTH_0_200_PTHJJ_GT25','QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_0_25',
             'QQ2HQQ_GE2J_MJJ_GT700_PTH_0_200_PTHJJ_GT25', 'QQ2HQQ_GE2J_MJJ_GT350_PTH_GT200']
+
+
 #signal = ['qqH_Rest','QQ2HQQ_GE2J_MJJ_60_120'] # for debugging
 #conf_matrix = np.zeros((2,1)) # for the final confusion matrix
 conf_matrix_w = np.zeros((2,len(signal)))
 conf_matrix_no_w = np.zeros((2,len(signal)))
 
+conf_matrix_w2 = np.zeros((1,len(signal)))
+conf_matrix_no_w2 = np.zeros((1,len(signal)))
+
 fig, ax = plt.subplots()
 plt.rcParams.update({'font.size': 9})
 
 for i in range(len(signal)):
+    clf_2 = xgb.XGBClassifier(objective='binary:logistic', n_estimators=num_estimators, 
+                            eta=0.1, maxDepth=6, min_child_weight=0.01, 
+                            subsample=0.6, colsample_bytree=0.6, gamma=4)
     data_new = x_test.copy()  
     data_new = data_new.drop(columns = ['output_score_qqh1','output_score_qqh2', 'output_score_qqh3', 'output_score_qqh4',
                                         'output_score_qqh5', 'output_score_qqh6', 'output_score_qqh7'])
@@ -639,6 +714,9 @@ for i in range(len(signal)):
     conf_matrix_no_w[0][i] = cm_2_no_weights[0][1]
     conf_matrix_no_w[1][i] = cm_2_no_weights[1][1]
 
+    conf_matrix_w2[0][i] = (cm_2[0][0] + cm_2[1][0]) / np.sum(np.array(cm_2))
+    conf_matrix_no_w2[0][i] = (cm_2_no_weights[0][0] + cm_2_no_weights[1][0])/ np.sum(np.array(cm_2_no_weights))
+
     # ROC Curve
     sig_y_test  = np.where(y_test_2==1, 1, 0)
     #sig_y_test  = y_test_2
@@ -668,7 +746,9 @@ print(conf_matrix_w)
 
 #Exporting final confusion matrix
 name_cm = 'csv_files/BDT_binary_cm'
-np.savetxt(name_cm, conf_matrix_w, delimiter = ',')
+np.savetxt(name_cm, cm_old, delimiter = ',')
+name_cm_no_w = 'csv_files/BDT_binary_cm_no_w'
+np.savetxt(name_cm_no_w, cm_old_no_weights, delimiter = ',')
 
 #Need a new function beause the cm structure is different
 def plot_performance_plot_final(cm=conf_matrix_w, cm_old = cm_old, labels=labelNames, color = color, name = 'plotting/BDT_plots/BDT_qqH_Sevenclass_Performance_Plot'):

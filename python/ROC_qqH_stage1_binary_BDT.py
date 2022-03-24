@@ -35,21 +35,35 @@ BDT_cm = np.loadtxt('csv_files/BDT_binary_cm', delimiter = ',')
 NN_cm = np.loadtxt('csv_files/NN_binary_cm', delimiter = ',')
 Cuts_cm = np.loadtxt('csv_files/Cuts_binary_cm', delimiter = ',')
 
+BDT_cm_no_w = np.loadtxt('csv_files/BDT_binary_cm_no_w', delimiter = ',')
+NN_cm_no_w = np.loadtxt('csv_files/NN_binary_cm_no_w', delimiter = ',')
+Cuts_cm_no_w = np.loadtxt('csv_files/Cuts_binary_cm_no_w', delimiter = ',')
+
 for i in range(len(signal)):
 
-    len_signal = []
-    len_signal.append(np.sum(BDT_cm[1,i]))   
-    len_signal.append(np.sum(NN_cm[1,i]))   
-    len_signal.append(np.sum(Cuts_cm[1,i]))   
-    len_signal = np.array(len_signal)
-    scale = np.max(len_signal)
-    scale_array = len_signal/scale
+    BDT_s_in = BDT_cm[i][i]
+    BDT_s_tot = np.sum(BDT_cm[i,:])
+    BDT_e_s = BDT_s_in/BDT_s_tot
+    BDT_b_in = np.sum(BDT_cm[:,i]) - BDT_s_in
+    BDT_b_tot = np.sum(BDT_cm) - BDT_s_tot
+    BDT_e_b = BDT_b_in/BDT_b_tot
 
-    scale_BDT_sig =  
-    scale_NN = 
-    scale_cuts = 
+    NN_s_in = NN_cm[i][i]
+    NN_s_tot = np.sum(NN_cm[i,:])
+    NN_e_s = NN_s_in/NN_s_tot
+    NN_b_in = np.sum(NN_cm[:,i]) - NN_s_in
+    NN_b_tot = np.sum(NN_cm) - NN_s_tot
+    NN_e_b = NN_b_in/NN_b_tot
+
+    Cuts_s_in = Cuts_cm[i][i]
+    Cuts_s_tot = np.sum(Cuts_cm[i,:])
+    Cuts_e_s = Cuts_s_in/Cuts_s_tot
+    Cuts_b_in = np.sum(Cuts_cm[:,i]) - Cuts_s_in
+    Cuts_b_tot = np.sum(Cuts_cm) - Cuts_s_tot
+    Cuts_e_b = Cuts_b_in/Cuts_b_tot
 
     fig, ax = plt.subplots()
+    
     #BDT
     BDT_name_fpr = 'csv_files/BDT_binary_fpr_' + signal[i]
     BDT_fpr_keras = np.loadtxt(BDT_name_fpr, delimiter = ',')
@@ -57,6 +71,7 @@ for i in range(len(signal)):
     BDT_array_max = abs(np.max(BDT_fpr_keras))
     BDT_array_range = BDT_array_max + BDT_array_min
     BDT_fpr_keras = (BDT_fpr_keras + BDT_array_min)/BDT_array_range
+    BDT_fpr_keras_scale = BDT_fpr_keras*BDT_e_b
 
     BDT_name_tpr = 'csv_files/BDT_binary_tpr_' + signal[i]
     BDT_tpr_keras = np.loadtxt(BDT_name_tpr, delimiter = ',')
@@ -64,11 +79,11 @@ for i in range(len(signal)):
     BDT_array_max_tpr = abs(np.max(BDT_tpr_keras))
     BDT_array_range_tpr = BDT_array_max_tpr + BDT_array_min_tpr
     BDT_tpr_keras = (BDT_tpr_keras + BDT_array_min_tpr)/BDT_array_range_tpr
-    BDT_tpr_keras_scale = BDT_tpr_keras*scale_array[0]
+    BDT_tpr_keras_scale = BDT_tpr_keras*BDT_e_s
 
-    BDT_auc_test = auc(BDT_fpr_keras, BDT_tpr_keras)*scale_array[0]
-    ax.plot(BDT_fpr_keras, BDT_tpr_keras_scale, label = 'BDT AUC = {0}'.format(round(BDT_auc_test, 3)), color = 'blue')
-
+    BDT_auc_test = auc(BDT_fpr_keras, BDT_tpr_keras)
+    ax.plot(BDT_fpr_keras_scale, BDT_tpr_keras_scale, label = 'BDT with {0} events before binary BDT'.format(int(BDT_cm_no_w[i][i])), color = 'blue')
+    
     #NNs
     NN_name_fpr = 'csv_files/NN_binary_fpr_' + signal[i]
     NN_fpr_keras = np.loadtxt(NN_name_fpr, delimiter = ',')
@@ -76,6 +91,7 @@ for i in range(len(signal)):
     NN_array_max = abs(np.max(NN_fpr_keras))
     NN_array_range = NN_array_max + NN_array_min
     NN_fpr_keras = (NN_fpr_keras + NN_array_min)/NN_array_range
+    NN_fpr_keras_scale = NN_fpr_keras*NN_e_b
 
     NN_name_tpr = 'csv_files/NN_binary_tpr_' + signal[i]
     NN_tpr_keras = np.loadtxt(NN_name_tpr, delimiter = ',')
@@ -83,11 +99,11 @@ for i in range(len(signal)):
     NN_array_max = abs(np.max(NN_tpr_keras))
     NN_array_range = NN_array_max + NN_array_min
     NN_tpr_keras = (NN_tpr_keras + NN_array_min)/NN_array_range
-    NN_tpr_keras_scale = NN_tpr_keras*scale_array[1]
+    NN_tpr_keras_scale = NN_tpr_keras*NN_e_s
 
-    NN_auc_test = auc(NN_fpr_keras, NN_tpr_keras)*scale_array[1]
-    ax.plot(NN_fpr_keras, NN_tpr_keras_scale, label = 'NN AUC = {0}'.format(round(NN_auc_test, 3)), color = 'red')
-
+    NN_auc_test = auc(NN_fpr_keras, NN_tpr_keras)
+    ax.plot(NN_fpr_keras_scale, NN_tpr_keras_scale, label = 'NN with {0} events before binary BDT'.format(int(NN_cm_no_w[i][i])), color = 'red')
+    
     #Cuts
     Cut_name_fpr = 'csv_files/Cuts_binary_fpr_' + signal[i]
     Cut_fpr_keras = np.loadtxt(Cut_name_fpr, delimiter = ',')
@@ -95,6 +111,7 @@ for i in range(len(signal)):
     Cut_array_max = abs(np.max(Cut_fpr_keras))
     Cut_array_range = Cut_array_max + Cut_array_min
     Cut_fpr_keras = (Cut_fpr_keras + Cut_array_min)/Cut_array_range
+    Cut_fpr_keras_scale = Cut_fpr_keras*Cuts_e_b
 
     Cut_name_tpr = 'csv_files/Cuts_binary_tpr_' + signal[i]
     Cut_tpr_keras = np.loadtxt(Cut_name_tpr, delimiter = ',')
@@ -102,18 +119,18 @@ for i in range(len(signal)):
     Cut_array_max = abs(np.max(Cut_tpr_keras))
     Cut_array_range = Cut_array_max + Cut_array_min
     Cut_tpr_keras = (Cut_tpr_keras + Cut_array_min)/Cut_array_range
-    Cut_tpr_keras_scale = Cut_tpr_keras*scale_array[2]
+    Cut_tpr_keras_scale = Cut_tpr_keras*Cuts_e_s
 
-    Cut_auc_test = auc(Cut_fpr_keras, Cut_tpr_keras)*scale_array[2]
-    ax.plot(Cut_fpr_keras, Cut_tpr_keras_scale, label = 'Cut AUC = {0}'.format(round(Cut_auc_test, 3)), color = 'green')
-
+    Cut_auc_test = auc(Cut_fpr_keras, Cut_tpr_keras)
+    ax.plot(Cut_fpr_keras_scale, Cut_tpr_keras_scale, label = 'Cut with {0} events before binary BDT'.format(int(0.15*Cuts_cm_no_w[i][i])), color = 'green')
+    
     ax.legend(loc = 'lower right', fontsize = 'small')
     ax.set_xlabel('Background Efficiency', ha='right', x=1, size=9)
     ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
     ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
     plt.tight_layout()
     
-    name = 'plotting/BDT_qqH_binary_Multi_ROC_curve' + signal[i]
+    name = 'plotting/BDT_qqH_sevenclass_binary_Multi_ROC_curve' + signal[i]
     plt.savefig(name, dpi = 1200)
-    print("Plotting ROC Curve")
+    print("Plotting ROC Curve with ", signal[i])
     plt.close()

@@ -41,7 +41,7 @@ df['proc_new'] = mapping(map_list=map_def,stage=df['HTXS_stage_0'])
 
 
 list_variables = [#'diphotonPt'
-                 'leadPhotonEta'
+                # 'leadPhotonEta'
                 #, 'subleadPhotonEta' 
                 #, 'leadPhotonIDMVA' 
                 #, 'subleadPhotonIDMVA'
@@ -65,7 +65,7 @@ list_variables = [#'diphotonPt'
                 #, 'min_IDMVA'
                 #, 'max_IDMVA'
                 #,'dijetCentrality'
-                # 'leadJetBTagScore' 
+                #'leadJetBTagScore' 
                 # 'subleadJetBTagScore', 'subsubleadJetBTagScore'
                 #, 'leadJetMass' ,'leadPhotonEn', 'leadPhotonMass' ,
                 # 'leadPhotonPt'
@@ -77,7 +77,10 @@ list_variables = [#'diphotonPt'
                 #'subleadJetDiphoDEta','subleadJetEn','subleadJetEta','subleadJetPhi','subsubleadPhotonIDMVA',				
                 #'diphotonEta','diphotonPhi','dijetPt','dijetEta','dijetPhi','dijetMinDRJetPho','dijetDiphoAbsDEta',
                 #'nSoftJets'
-                #,'leadElectronEn', 'leadElectronMass', 'leadElectronPt'
+                #,
+                #'leadElectronEn'
+                #'leadElectronMass', 
+                'leadElectronPt'
 ]
 
 for variable in list_variables:
@@ -120,7 +123,7 @@ for variable in list_variables:
     # Now let's plot the histogram
 
     scale = 100
-    num_bins = 70
+    num_bins = 200
     normalize = True
 
     fig, ax = plt.subplots()
@@ -133,13 +136,13 @@ for variable in list_variables:
     ax.hist(tth_sig, bins = num_bins, density = normalize, color = colors[3], label = 'ttH', stacked = True, histtype = 'step', weights = scale * tth_sig_w)
     ax.hist(th_sig, bins = num_bins, density = normalize, color = colors[4], label = 'tH', stacked = True, histtype = 'step', weights = scale * th_sig_w)
 
-    #ax.set_xlim(0,250)
-    #ax.set_ylim(0,0.04)
+    ax.set_xlim(0,100)
+    #ax.set_ylim(0,20)
     #ax.set_xticks([0,50,100,150,200,250,300])
     #ax.set_yticks([0,0.005,0.01, 0.015,0.02, 0.025, 0.03, 0.035, 0.04])
     ax.legend(loc = 'upper right')
-    ax.set_xlabel(variable, ha='right',x=1, size = 10)
-    ax.set_ylabel('Fraction of events',ha='right', y=1, size = 10)
+    ax.set_xlabel('Lead electron $p_T$ [GeV]', ha='center', size = 10)
+    ax.set_ylabel('Fraction of events',ha='center', size = 10)
     #ax.grid(True, 'major', linestyle='solid', color='grey', alpha=0.5)
     plt.tight_layout()
     ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
