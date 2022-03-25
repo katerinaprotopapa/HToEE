@@ -31,7 +31,7 @@ from keras.metrics import categorical_crossentropy, binary_crossentropy
 #Define key quantities
 
 #HPs
-num_epochs = 40
+num_epochs = 2
 batch_size = 64
 val_split = 0.15
 test_split = 0.15
@@ -90,6 +90,10 @@ df = pd.concat(dataframes, sort=False, axis=0 )
 
 #dataframe of train_vars
 data = df[train_vars]
+
+def error_fn(num_correct, num_all, sigma_correct, sigma_all):
+    error = (((1/num_all)**2) * (sigma_correct**2) + ((-num_correct / (num_all**2))**2) * (sigma_correct**2))**0.5
+    return error
  
 #Preselection cuts
 data = data[data.diphotonMass>100.]
@@ -242,6 +246,45 @@ print(NNaccuracy)
 cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 cm_old = cm
 cm_old_no_weights = confusion_matrix(y_true=y_true,y_pred=y_pred)
+
+cm_new = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+cm_weights_new_squared = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+cm_weights_new = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+for i in range(len(y_true)):
+    cm_new[y_true[i]][y_pred[i]] += 1
+    cm_weights_new_squared[y_true[i]][y_pred[i]] += test_w[i]**2
+    cm_weights_new[y_true[i]][y_pred[i]] += test_w[i]
+
+#Accuracy Score
+"""
+print 'Accuracy score - function: '
+NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = test_w)
+print(NNaccuracy)
+"""
+
+num_correct = 0
+num_all = 0
+sigma_correct = 0
+sigma_all = 0
+yield_all = 0
+yield_correct = 0
+for i in range(cm_new.shape[0]):
+    for j in range(cm_new.shape[1]):
+        num_all += cm_new[i][j]
+        sigma_all += cm_weights_new_squared[i][j]
+        yield_all += cm_weights_new[i][j]
+        if i == j:     # so diagonal
+            num_correct += cm_new[i][j]
+            sigma_correct += cm_weights_new_squared[i][j] 
+            yield_correct += cm_weights_new[i][j]
+sigma_all = sigma_all**0.5
+sigma_correct = sigma_correct**0.5
+accuracy = num_correct / num_all
+
+acc_score_error = error_fn(yield_correct, yield_all, sigma_correct, sigma_all)
+print('Final Accuracy Score: ', accuracy)
+print('with error: ', acc_score_error)
+exit(0)
 
 """
 def roc_comp_step1(ypred,output):

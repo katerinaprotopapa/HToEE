@@ -1,3 +1,4 @@
+from __future__ import division
 import argparse
 import pandas as pd
 import numpy as np
@@ -44,7 +45,7 @@ viridis = cm.get_cmap('viridis', 8)
 #learning_rate = 0.001
 
 #Optimized according to 4class
-num_epochs = 40
+num_epochs = 4
 batch_size = 64
 test_split = 0.2
 val_split = 0.30
@@ -160,8 +161,11 @@ df = pd.concat(dataframes, sort=False, axis=0 )
 
 #dataframe of train_vars
 data = df[train_vars]
-print 'we are here'
+#print 'we are here'
 
+def error_fn(num_correct, num_all, sigma_correct, sigma_all):
+    error = (((1/num_all)**2) * (sigma_correct**2) + ((-num_correct / (num_all**2))**2) * (sigma_correct**2))**0.5
+    return error
 
 # pTHjj and njets variable construction
 # my soul has exited my body since I have tried every possible pandas way to do this ... I will turn to numpy arrays now for my own sanity
@@ -433,23 +437,90 @@ cm = confusion_matrix(y_true=y_true,y_pred=y_pred, sample_weight = test_w)
 cm_old = cm
 cm_old_no_weights = confusion_matrix(y_true=y_true,y_pred=y_pred)
 
+cm_new = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+cm_weights_new_squared = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+cm_weights_new = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+for i in range(len(y_true)):
+    cm_new[y_true[i]][y_pred[i]] += 1
+    cm_weights_new_squared[y_true[i]][y_pred[i]] += test_w[i]**2
+    cm_weights_new[y_true[i]][y_pred[i]] += test_w[i]
+
 #Accuracy Score
-#y_pred = y_pred_test.argmax(axis=1)
-#y_true = y_test.argmax(axis=1)
-print 'Accuracy score: '
+"""
+print 'Accuracy score - function: '
 NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = test_w)
 print(NNaccuracy)
+"""
 
 num_correct = 0
 num_all = 0
-for i in range(cm.shape[0]):
-    for j in range(cm.shape[1]):
-        num_all += cm[i][j]
+sigma_correct = 0
+sigma_all = 0
+yield_all = 0
+yield_correct = 0
+for i in range(cm_new.shape[0]):
+    for j in range(cm_new.shape[1]):
+        num_all += cm_new[i][j]
+        sigma_all += cm_weights_new_squared[i][j]
+        yield_all += cm_weights_new[i][j]
         if i == j:     # so diagonal
-            num_correct += cm[i][j]
-
+            num_correct += cm_new[i][j]
+            sigma_correct += cm_weights_new_squared[i][j] 
+            yield_correct += cm_weights_new[i][j]
+sigma_all = sigma_all**0.5
+sigma_correct = sigma_correct**0.5
 accuracy = num_correct / num_all
-print('Final Accuracy Score with qqH rest: ', accuracy)
+
+acc_score_error = error_fn(yield_correct, yield_all, sigma_correct, sigma_all)
+print('Final Accuracy Score: ', accuracy)
+print('with error: ', acc_score_error)
+
+
+s_in = []
+s_in_w = []
+s_in_w_squared = []
+s_tot = []
+s_tot_w = []
+s_tot_w_squared = []
+e_s = []
+signal_error_list = []
+b_in = []
+b_in_w = []
+b_in_w_squared = []
+b_tot = []
+b_tot_w = []
+b_tot_w_squared = []
+e_b = []
+bckg_error_list = []
+
+for i in range(len(labelNames)):
+    s_in.append(cm_new[i][i])
+    s_in_w.append(cm_weights_new[i][i])
+    s_in_w_squared.append(cm_weights_new_squared[i][i])
+    s_tot.append(np.sum(cm_new[i,:]))
+    s_tot_w.append(np.sum(cm_weights_new[i,:]))
+    s_tot_w_squared.append(np.sum(cm_weights_new_squared[i,:]))
+    e_s.append(s_in[i]/s_tot[i])
+
+    b_in.append(np.sum(cm_new[:,i]) - s_in[i])
+    b_in_w.append(np.sum(cm_weights_new[:,i]) - s_in_w[i])
+    b_in_w_squared.append(np.sum(cm_weights_new_squared[:,i]) - s_in_w_squared[i])
+    b_tot.append(np.sum(cm_new) - s_tot[i])
+    b_tot_w.append(np.sum(cm_weights_new) - s_tot_w[i])
+    b_tot_w_squared.append(np.sum(cm_weights_new_squared) - s_tot_w_squared[i])
+    e_b.append(b_in[i]/b_tot[i])
+
+    signal_error = error_fn(s_in_w[i], s_tot_w[i], np.sqrt(s_in_w_squared[i]), np.sqrt(s_tot_w_squared[i]))
+    #signal_error = 1 / np.sqrt(np.sum(cm_new[i,:]))
+    print('Final Signal Efficiency: ', e_s[i])
+    print('with error: ', signal_error)
+    signal_error_list.append(signal_error)
+
+    bckg_error = error_fn(b_in_w[i], b_tot_w[i], np.sqrt(b_in_w_squared[i]), np.sqrt(b_tot_w_squared[i]))
+    #bckg_error = 1 / np.sqrt(np.sum(cm_new[i,:]))
+    print('Final Signal Efficiency: ', e_b[i])
+    print('with error: ', bckg_error)
+    bckg_error_list.append(bckg_error)
 
 num_correct_2 = 0
 num_all_2 = 0
@@ -651,6 +722,25 @@ plot_output_score(data='output_score_qqh7')
 # data_new['proc']  # are the true labels
 # data_new['weight'] are the weights
 
+s_in_2 = []
+s_in_w_2 = []
+s_in_w_squared_2 = []
+s_tot_2 = []
+s_tot_w_2 = []
+s_tot_w_squared_2 = []
+e_s_2 = []
+signal_error_list_2 = []
+b_in_2 = []
+b_in_w_2 = []
+b_in_w_squared_2 = []
+b_tot_2 = []
+b_tot_w_2 = []
+b_tot_w_squared_2 = []
+e_b_2 = []
+bckg_error_list_2 = []
+
+error_final_array = []
+
 num_estimators = 200
 test_split = 0.30
 
@@ -748,6 +838,91 @@ for i in range(len(signal)):
     conf_matrix_w2[0][i] = (cm_2[0][0] + cm_2[1][0]) / np.sum(np.array(cm_2))
     conf_matrix_no_w2[0][i] = (cm_2_no_weights[0][0] + cm_2_no_weights[1][0])/ np.sum(np.array(cm_2_no_weights))
 
+
+    # ERROR STUFF -----------
+    # dear philipp, here is your christmas present:
+    threshold = 0.4   # bckg efficiency threshold (manually set)
+
+    # get output score
+    x_test_2['proc'] = proc_arr_test_2
+    x_test_2['weight'] = test_w_2
+
+    x_test_2['output_score_background'] = y_pred_test_2[:,0]
+    x_test_2[signal[i]] = y_pred_test_2[:,1]
+
+    x_test_qqh1 = x_test_2[x_test_2['proc'] == signal[i]]
+    x_test_qqh2 = x_test_2[x_test_2['proc'] == 'background']
+
+    qqh1_w = x_test_qqh1['weight'] / x_test_qqh1['weight'].sum()
+    qqh2_w = x_test_qqh2['weight'] / x_test_qqh2['weight'].sum()
+
+    output_score_qqh2 = np.array(x_test_qqh2[signal[i]])
+    counts, bins, _ = plt.hist(output_score_qqh2, bins=50, label='Background', histtype='step',weights=qqh2_w, density = True)
+    #plt.savefig('plotting/TESTING', dpi = 1200)
+
+    for j in range(len(bins)):
+        bins_2 = bins[:j+1]
+        counts_2 = counts[:j]
+        area = sum(np.diff(bins_2)*counts_2)
+        if area <= (1-threshold):
+            bdt_score = bins_2[j]
+    
+    print('bdt_score: ', bdt_score)
+
+    thresh = bdt_score
+
+    y_pred_errors = []
+    for k in range(len(y_test_2)):
+        if y_pred_test_2[:,1][k]>thresh:
+            y_pred_errors.append(1)
+        else:
+            y_pred_errors.append(0)
+    y_pred_errors = np.array(y_pred_errors)
+    cm_errors = np.zeros((2,2),dtype=int)
+    cm_errors_weights = np.zeros((2,2),dtype=float)
+    cm_errors_weights_squared = np.zeros((2,2),dtype=float)
+    for l in range(len(y_test_2)):
+        cm_errors[y_test_2[l]][y_pred_errors[l]] += 1
+        cm_errors_weights[y_test_2[l]][y_pred_errors[l]] += test_w_2[l]
+        cm_errors_weights_squared[y_test_2[l]][y_pred_errors[l]] += test_w_2[l]**2
+    print(cm_errors)
+    print(cm_errors_weights)
+    print(cm_errors_weights_squared)
+
+    s_in_2.append(cm_errors[1][1])
+    s_in_w_2.append(cm_errors_weights[1][1])
+    s_in_w_squared_2.append(cm_errors_weights_squared[1][1])
+    s_tot_2.append(np.sum(cm_errors[1,:]))
+    s_tot_w_2.append(np.sum(cm_errors_weights[1,:]))
+    s_tot_w_squared_2.append(np.sum(cm_errors_weights_squared[1,:]))
+    e_s_2.append(s_in_2[i]/s_tot_2[i])
+
+    b_in_2.append(cm_errors[0][1])
+    b_in_w_2.append(cm_errors_weights[0][1])
+    b_in_w_squared_2.append(cm_errors_weights_squared[0][1])
+    b_tot_2.append(np.sum(cm_errors[0,:]))
+    b_tot_w_2.append(np.sum(cm_errors_weights[0,:]))
+    b_tot_w_squared_2.append(np.sum(cm_errors_weights_squared[0,:]))
+    e_b_2.append(b_in_2[i]/b_tot_2[i])
+
+    signal_error = error_fn(s_in_w_2[i], s_tot_w_2[i], np.sqrt(s_in_w_squared_2[i]), np.sqrt(s_tot_w_squared_2[i]))
+    #signal_error = 1 / np.sqrt(np.sum(cm_new[i,:]))
+    print('Final Signal Efficiency: ', e_s_2[i])
+    print('with error: ', signal_error)
+    signal_error_list_2.append(signal_error)
+
+    bckg_error = error_fn(b_in_w_2[i], b_tot_w_2[i], np.sqrt(b_in_w_squared_2[i]), np.sqrt(b_tot_w_squared_2[i]))
+    #bckg_error = 1 / np.sqrt(np.sum(cm_new[i,:]))
+    print('Final Signal Efficiency: ', e_b_2[i])
+    print('with error: ', bckg_error)
+    bckg_error_list_2.append(bckg_error)
+
+    # adding the errors
+    error_final_array.append(np.sqrt(signal_error_list_2[i]**2 + bckg_error_list_2[i]**2 + signal_error_list[i]**2 + bckg_error_list[i]**2))
+    print('Error final: ', error_final_array[i])
+    #exit(0)
+
+    # --------------
     # ROC Curve
     sig_y_test  = np.where(y_test_2==1, 1, 0)
     #sig_y_test  = y_test_2
@@ -768,7 +943,7 @@ ax.set_ylabel('Signal Efficiency',ha='right', y=1, size=9)
 ax.grid(True, 'major', linestyle='dotted', color='grey', alpha=0.5)
 plt.tight_layout()
 name = 'plotting/NN_plots/NN_qqH_binary_Multi_ROC_curve'
-plt.savefig(name, dpi = 1200)
+#plt.savefig(name, dpi = 1200)
 print("Plotting ROC Curve")
 plt.close()
 
@@ -812,6 +987,46 @@ def plot_performance_plot_final(cm=conf_matrix_w,cm_old = cm_old,labels=labelNam
     plt.show()
 # now to make our final plot of performance
 #plot_performance_plot_final(cm = conf_matrix_w,labels = labelNames, name = 'plotting/NN_plots/NN_qqH_Sevenclass_Performance_Plot_final')
+
+y_true = y_test_2
+y_pred = y_pred_2
+cm_new = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+cm_weights_new_squared = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+cm_weights_new = np.zeros((len(labelNames),len(labelNames)),dtype=float)
+for i in range(len(y_true)):
+    cm_new[y_true[i]][y_pred[i]] += 1
+    cm_weights_new_squared[y_true[i]][y_pred[i]] += test_w_2[i]**2
+    cm_weights_new[y_true[i]][y_pred[i]] += test_w_2[i]
+
+#Accuracy Score
+"""
+print 'Accuracy score - function: '
+NNaccuracy = accuracy_score(y_true, y_pred, sample_weight = test_w)
+print(NNaccuracy)
+"""
+
+num_correct = 0
+num_all = 0
+sigma_correct = 0
+sigma_all = 0
+yield_all = 0
+yield_correct = 0
+for i in range(cm_new.shape[0]):
+    for j in range(cm_new.shape[1]):
+        num_all += cm_new[i][j]
+        sigma_all += cm_weights_new_squared[i][j]
+        yield_all += cm_weights_new[i][j]
+        if i == j:     # so diagonal
+            num_correct += cm_new[i][j]
+            sigma_correct += cm_weights_new_squared[i][j] 
+            yield_correct += cm_weights_new[i][j]
+sigma_all = sigma_all**0.5
+sigma_correct = sigma_correct**0.5
+accuracy = num_correct / num_all
+
+acc_score_error = error_fn(yield_correct, yield_all, sigma_correct, sigma_all)
+print('Final Accuracy Score after specialized BDT: ', accuracy)
+print('with error: ', acc_score_error)
 
 num_false = np.sum(conf_matrix_w[0,:])
 num_correct = np.sum(conf_matrix_w[1,:])
